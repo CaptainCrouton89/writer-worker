@@ -1,25 +1,29 @@
 // Outline generation and regeneration functions
 
+import { callAI, generateSequenceMetadata } from "../ai/client.js";
+import {
+  SPICE_LEVELS,
+  STORY_LENGTH_CONFIG,
+  STORY_LENGTH_PAGES,
+  TEMPERATURE_BY_SPICE,
+} from "../constants/generation.js";
+import {
+  buildOutlinePrompt,
+  buildOutlineSystemPrompt,
+  buildUserContext,
+} from "../prompts/outline.js";
 import { supabase } from "../supabase.js";
 import {
-  UserPreferences,
-  StoryOutline,
-  Result,
   Chapter,
+  Result,
+  StoryOutline,
+  UserPreferences,
 } from "../types/generation.js";
-import {
-  TEMPERATURE_BY_SPICE,
-  STORY_LENGTH_CONFIG,
-  SPICE_LEVELS,
-  STORY_LENGTH_PAGES,
-} from "../constants/generation.js";
-import { buildUserContext, buildOutlinePrompt, buildOutlineSystemPrompt } from "../prompts/outline.js";
-import { parseOutlineResponse, outlineToText } from "../utils/outline.js";
 import {
   generateOutlineEmbedding,
   saveOutlineEmbedding,
 } from "../utils/embedding.js";
-import { callAI, generateSequenceMetadata } from "../ai/client.js";
+import { outlineToText, parseOutlineResponse } from "../utils/outline.js";
 
 // Generate story outline only
 export const generateStoryOutline = async (
@@ -47,14 +51,17 @@ export const generateStoryOutline = async (
   }
   console.log(`📋 Parsed ${parseResult.data.chapters.length} chapters`);
 
-  // Generate title and description
+  // Generate title and description with retry logic
   console.log("🎯 Generating sequence title and description...");
   const outlineText = outlineToText(parseResult.data);
-  const metadataResult = await generateSequenceMetadata(
-    outlineText,
-    preferences,
-    temperature
-  );
+
+  let metadataResult = await generateSequenceMetadata(outlineText, preferences);
+
+  // Retry once if first attempt fails
+  if (!metadataResult.success) {
+    console.warn("⚠️ First metadata generation attempt failed, retrying...");
+    metadataResult = await generateSequenceMetadata(outlineText, preferences);
+  }
 
   let finalOutline = parseResult.data;
   if (metadataResult.success) {
@@ -68,8 +75,8 @@ export const generateStoryOutline = async (
       is_sexually_explicit: metadataResult.data.is_sexually_explicit,
     };
   } else {
-    console.warn(
-      "⚠️ Failed to generate sequence metadata:",
+    console.error(
+      "❌ Failed to generate sequence metadata after retry:",
       metadataResult.error
     );
   }
@@ -224,7 +231,11 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
 
   const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
   const systemPrompt = buildOutlineSystemPrompt(preferences);
-  const outlineResult = await callAI(regeneratePrompt, temperature, systemPrompt);
+  const outlineResult = await callAI(
+    regeneratePrompt,
+    temperature,
+    systemPrompt
+  );
   if (!outlineResult.success) {
     console.error("❌ Outline regeneration failed:", outlineResult.error);
     return outlineResult;
@@ -255,14 +266,19 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
     chapters: combinedChapters as readonly Chapter[],
   };
 
-  // Generate title and description for the updated outline
+  // Generate title and description for the updated outline with retry logic
   console.log("🎯 Generating updated sequence title and description...");
   const outlineText = outlineToText(finalOutline);
-  const metadataResult = await generateSequenceMetadata(
-    outlineText,
-    preferences,
-    temperature
-  );
+
+  let metadataResult = await generateSequenceMetadata(outlineText, preferences);
+
+  // Retry once if first attempt fails
+  if (!metadataResult.success) {
+    console.warn(
+      "⚠️ First updated metadata generation attempt failed, retrying..."
+    );
+    metadataResult = await generateSequenceMetadata(outlineText, preferences);
+  }
 
   if (metadataResult.success) {
     console.log("✅ Updated sequence metadata generated successfully");
@@ -275,8 +291,8 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
       is_sexually_explicit: metadataResult.data.is_sexually_explicit,
     };
   } else {
-    console.warn(
-      "⚠️ Failed to generate updated sequence metadata:",
+    console.error(
+      "❌ Failed to generate updated sequence metadata after retry:",
       metadataResult.error
     );
   }

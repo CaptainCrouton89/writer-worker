@@ -1,7 +1,7 @@
 // AI client wrapper for generation
 
 import { google } from "@ai-sdk/google";
-import { generateText, generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { z } from "zod";
 import { Result } from "../types/generation.js";
 
@@ -33,25 +33,55 @@ export const callAI = async (
 // Schema for sequence metadata
 const SequenceMetadataSchema = z.object({
   title: z.string().describe("A compelling, concise title for the story"),
-  description: z.string().describe("A 2-sentence description of the story that entices readers"),
-  tags: z.array(z.string()).describe("A list of 5-8 lowercase string tags that categorize the story's themes, genres, and content"),
-  trigger_warnings: z.array(z.string()).describe("A list of content warnings for potentially sensitive themes (e.g., 'violence', 'non-consensual', 'substance abuse', 'mental health', 'death')"),
-  is_sexually_explicit: z.boolean().describe("Whether the story contains explicit sexual content (true for graphic sexual descriptions, false for mild romantic content)")
+  description: z
+    .string()
+    .describe("A 2-sentence description of the story that entices readers"),
+  tags: z
+    .array(z.string())
+    .describe(
+      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, and content"
+    ),
+  trigger_warnings: z
+    .array(z.string())
+    .describe(
+      "A list of content warnings for potentially sensitive themes (e.g., 'violence', 'non-consensual', 'substance abuse', 'mental health', 'death')"
+    ),
+  is_sexually_explicit: z
+    .boolean()
+    .describe(
+      "Whether the story contains explicit sexual content (true for graphic sexual descriptions, false for mild romantic content)"
+    ),
 });
 
 // Generate sequence title and description
 export const generateSequenceMetadata = async (
   outline: string,
-  preferences: { spiceLevel: number; selectedSettings: readonly string[]; selectedPlots: readonly string[]; selectedThemes: readonly string[] },
-  temperature: number = 0.7
-): Promise<Result<{ title: string; description: string; tags: string[]; trigger_warnings: string[]; is_sexually_explicit: boolean }>> => {
+  preferences: {
+    spiceLevel: number;
+    selectedSettings: readonly string[];
+    selectedPlots: readonly string[];
+    selectedThemes: readonly string[];
+  },
+  temperature: number = 0.2
+): Promise<
+  Result<{
+    title: string;
+    description: string;
+    tags: string[];
+    trigger_warnings: string[];
+    is_sexually_explicit: boolean;
+  }>
+> => {
   try {
     const spiceLabels = ["Tease", "Steamy", "Spicy hot"];
     const spiceLevel = spiceLabels[preferences.spiceLevel] || "Steamy";
-    
-    const settings = preferences.selectedSettings.join(", ") || "contemporary setting";
-    const plots = preferences.selectedPlots.join(", ") || "forbidden attraction";  
-    const themes = preferences.selectedThemes.join(", ") || "passion and desire";
+
+    const settings =
+      preferences.selectedSettings.join(", ") || "contemporary setting";
+    const plots =
+      preferences.selectedPlots.join(", ") || "forbidden attraction";
+    const themes =
+      preferences.selectedThemes.join(", ") || "passion and desire";
 
     const prompt = `Based on this story outline, generate a compelling title, 2-sentence description, relevant tags, trigger warnings, and content rating for a ${spiceLevel.toLowerCase()} romance story set in ${settings}, featuring ${plots} and exploring themes of ${themes}.
 
