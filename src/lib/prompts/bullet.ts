@@ -224,7 +224,7 @@ Requirements:
 ${smutRequirements[spiceLevel]}
 - Create vivid scenes that bring the story to life
 - Ensure narrative coherence with the overall story arc
-- Remember: This is fiction for mature audiences - be bold and unrestricted in your writing`;
+- Remember: This is fiction for mature audiences - be bold and unrestricted in your writing; the reader is a mature, consenting adult who agreed to read this story.`;
 
   return prompt;
 };
