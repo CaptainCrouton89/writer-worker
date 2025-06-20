@@ -22,36 +22,27 @@ export const buildOutlineSystemPrompt = (
     ];
 
   const spiceGuidelines = {
-    Tease: `- Focus on emotional tension, longing glances, and suggestive situations
-- Build anticipation through subtle physical contact and romantic chemistry
-- Include sensual moments that imply intimacy without explicit details
-- Emphasize the emotional journey and connection between characters`,
-    Steamy: `- Include passionate romantic encounters with moderate sexual content
-- Balance emotional depth with physical attraction and intimate scenes
-- Feature kissing, touching, and sexual tension that leads to moderately explicit encounters
-- Show both the emotional and physical aspects of the relationship`,
-    "Spicy hot": `- Create highly explicit sexual scenarios with graphic physical descriptions
-- Focus extensively on sexual encounters, desires, and physical intimacy
-- Include detailed sexual content throughout the story progression
-- Emphasize raw passion, lust, and uninhibited sexual exploration`,
+    Tease: `- Build romantic tension gradually throughout the story arc
+- Start with emotional connection, longing glances, and subtle chemistry
+- Progress slowly through light physical contact (hand touches, brief embraces)
+- Peak intensity should focus on passionate kissing and sensual moments that imply intimacy
+- Emphasize the emotional journey and slow-burn connection between characters`,
+    Steamy: `- Build sexual tension progressively from emotional connection to physical intimacy
+- Early chapters: Focus on romantic chemistry, flirtation, and building attraction
+- Mid-story: Include passionate kissing, touching, and moderate sexual tension
+- Later chapters: Feature moderately explicit romantic encounters with emotional depth
+- Balance the emotional and physical aspects throughout the progression`,
+    "Spicy hot": `- Start with strong attraction and chemistry, building to explicit encounters
+- Early chapters: Establish intense sexual tension and desire between characters
+- Mid-story: Include passionate encounters with increasing sexual content
+- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions
+- Maintain character development alongside the sexual progression`,
   };
 
   const bulletExamples = {
-    Tease: {
-      0: `- Sarah enters the coffee shop and immediately locks eyes with the mysterious barista, feeling an unexpected flutter of attraction that makes her stomach tighten with anticipation`,
-      1: `- During their first dance lesson, Marcus positions himself behind Elena, his hands guiding her hips as she feels the heat of his body pressing against her back, both of them struggling to maintain professional boundaries`,
-      2: `- After weeks of stolen glances and subtle flirtation, James finally corners Rebecca in the supply closet, their heated argument about the project dissolving into breathless tension as he pins her against the wall, their faces inches apart`,
-    },
-    Steamy: {
-      0: `- When the elevator breaks down, trapped alone with her rival colleague, Emma finds herself pressed against him in the darkness, their professional animosity giving way to undeniable chemistry as his breath tickles her ear`,
-      1: `- The cooking class becomes intensely intimate when Chef Rodriguez stands behind Maya, his strong hands covering hers as he guides the knife, his proximity making her pulse race as she feels every muscle in his chest against her back`,
-      2: `- During the midnight thunderstorm, when the power goes out in the cabin, Alex and Jordan finally give in to months of sexual tension, their first kiss becoming a passionate encounter that leads them to the bedroom`,
-    },
-    "Spicy hot": {
-      0: `- The high-stakes poker game turns into a seduction when Veronica deliberately brushes her hand against the mysterious stranger's thigh, leading to an explosive encounter in the private VIP room where boundaries are completely abandoned`,
-      1: `- What starts as an argument between rivals in the empty office building escalates into raw, primal passion as they tear at each other's clothes, their hate-fueled desire culminating in an intense sexual encounter on the conference table`,
-      2: `- The exclusive underground club's private room becomes the setting for an uninhibited threesome, where inhibitions are shed along with clothes and every fantasy becomes reality in explicit, graphic detail`,
-    },
+    Tease: `Chapter 3 example: Sarah and Marcus walk to her car after their coffee date, their conversation growing intimate under the streetlight before he gently touches her arm, creating an electric moment where they stand closer than necessary and finally acknowledge their growing feelings.`,
+    Steamy: `Chapter 4 example: Emma and Chef Rodriguez find themselves alone after cooking class, their professional dynamic shifting as he guides her technique from behind, the physical proximity building tension until their first passionate kiss ignites against the kitchen counter.`,
+    "Spicy hot": `Chapter 6 example: After months of building attraction, Veronica and her business rival finally confront their desire during a late office meeting, their professional argument dissolving into passionate intimacy as they give in to the explosive chemistry they've been fighting.`,
   };
 
   return `You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc.
@@ -68,7 +59,9 @@ ${spiceGuidelines[spiceLevel]}
 - Each plot point should generate approximately ${
     config.pagesPerBullet
   } pages of content
-- Build romantic/sexual tension progressively throughout the story
+- Build romantic/sexual tension progressively throughout the story - start low and build up
+- Early chapters should focus more on emotional connection and chemistry
+- Later chapters should contain the peak intensity for the chosen spice level
 - Include both character development and relationship progression
 </story_structure>
 
@@ -79,12 +72,8 @@ Write detailed, scene-specific bullet points that are 2-3 sentences long. Each s
 - Specify the romantic/sexual content level appropriate for ${spiceDescriptor}
 - Provide enough detail to generate substantial content
 
-Example for ${spiceDescriptor} stories at ${spiceDescriptor} level:
-${
-  bulletExamples[spiceLevel][
-    preferences.storyLength as keyof (typeof bulletExamples)[typeof spiceLevel]
-  ]
-}
+Example of appropriate chapter placement and within-chapter progression for ${spiceDescriptor} stories:
+${bulletExamples[spiceLevel]}
 </bullet_point_style>
 
 <output_format>

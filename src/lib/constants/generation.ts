@@ -35,4 +35,4 @@ export const STORY_LENGTH_CONFIG = {
 } as const;
 
 // Temperature settings based on spice level for more creative output at higher levels
-export const TEMPERATURE_BY_SPICE = [0.6, 0.7, 0.8] as const;
+export const TEMPERATURE_BY_SPICE = [0.7, 0.8, 0.85] as const;
