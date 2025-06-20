@@ -2,6 +2,8 @@ import {
   generateCompleteFirstChapter,
   generateStoryOutline,
   regenerateOutlineWithUserPrompt,
+  generateOutlineEmbedding,
+  saveOutlineEmbedding,
   StoryOutline,
   UserPreferences,
 } from "./lib/generation-service.js";
@@ -126,7 +128,8 @@ async function processGenerationJob(job: GenerationJob) {
         existingOutline,
         job.user_prompt,
         preferences,
-        chapterIndex
+        chapterIndex,
+        job.id
       );
 
       if (!regenerateResult.success) {
@@ -192,6 +195,18 @@ async function processGenerationJob(job: GenerationJob) {
       } else {
         console.log(`✅ Outline saved for job ${job.id}`);
         await updateJobProgress(job.id, "outline_saved", 20);
+
+        // Generate and save outline embedding to sequence
+        if (job.sequence_id) {
+          try {
+            const embeddingResult = await generateOutlineEmbedding(outline);
+            if (embeddingResult) {
+              await saveOutlineEmbedding(job.sequence_id, embeddingResult);
+            }
+          } catch (error) {
+            console.error(`❌ Error generating outline embedding for job ${job.id}:`, error);
+          }
+        }
       }
     }
 

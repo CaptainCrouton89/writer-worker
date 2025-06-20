@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { supabase } from "./supabase.js";
+import { generateEmbedding } from "./embedding.js";
 
 // Types
 export interface UserPreferences {
@@ -66,6 +67,55 @@ const STORY_LENGTH_CONFIG = {
 const TEMPERATURE_BY_SPICE = [0.6, 0.7, 0.8] as const;
 
 // Pure transformation functions
+// Utility function to convert outline to text for embedding
+export const outlineToText = (outline: StoryOutline): string => {
+  return outline.chapters
+    .map((chapter, index) => {
+      const chapterText = `Chapter ${index + 1}: ${chapter.name}`;
+      const bulletsText = chapter.bullets
+        .map((bullet, bulletIndex) => `${bulletIndex + 1}. ${bullet.text}`)
+        .join('\n');
+      return `${chapterText}\n${bulletsText}`;
+    })
+    .join('\n\n');
+};
+
+// Generate embedding for a story outline
+export const generateOutlineEmbedding = async (outline: StoryOutline): Promise<string | null> => {
+  try {
+    const outlineText = outlineToText(outline);
+    console.log('📊 Generating embedding for outline...');
+    const embedding = await generateEmbedding(outlineText);
+    console.log('✅ Outline embedding generated successfully');
+    return JSON.stringify(embedding);
+  } catch (error) {
+    console.error('❌ Failed to generate outline embedding:', error);
+    return null;
+  }
+};
+
+// Save outline embedding to sequence
+export const saveOutlineEmbedding = async (sequenceId: string, embedding: string): Promise<void> => {
+  try {
+    console.log(`📊 Saving outline embedding to sequence ${sequenceId}...`);
+    const { error } = await supabase
+      .from('sequences')
+      .update({
+        embedding,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sequenceId);
+
+    if (error) {
+      console.error('❌ Failed to save outline embedding:', error);
+    } else {
+      console.log('✅ Outline embedding saved successfully');
+    }
+  } catch (error) {
+    console.error('❌ Error saving outline embedding:', error);
+  }
+};
+
 export const buildUserContext = (preferences: UserPreferences): string => {
   const settings =
     preferences.selectedSettings.length > 0
@@ -454,6 +504,28 @@ export const generateCompleteFirstChapter = async (
     }
     console.log(`📋 Parsed ${parseResult.data.chapters.length} chapters`);
     outline = parseResult.data;
+
+    // Generate and save outline embedding to sequence if jobId provided
+    if (jobId) {
+      try {
+        const { data: jobData, error: jobError } = await supabase
+          .from("generation_jobs")
+          .select("sequence_id")
+          .eq("id", jobId)
+          .single();
+
+        if (jobError) {
+          console.error(`❌ Failed to fetch job sequence_id:`, jobError);
+        } else if (jobData?.sequence_id) {
+          const embeddingResult = await generateOutlineEmbedding(outline);
+          if (embeddingResult) {
+            await saveOutlineEmbedding(jobData.sequence_id, embeddingResult);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error generating outline embedding:', error);
+      }
+    }
   }
 
   const chapterResult = extractChapterByIndex(outline, chapterIndex);
@@ -575,6 +647,7 @@ export const generateCompleteFirstChapter = async (
       const { error: updateError } = await supabase
         .from("chapters")
         .update({
+          title: chapterResult.data.name,
           content: fullChapterContent,
           updated_at: new Date().toISOString(),
         })
@@ -647,6 +720,8 @@ export const generateStoryOutline = async (
     return parseResult;
   }
   console.log(`📋 Parsed ${parseResult.data.chapters.length} chapters`);
+
+  // Note: For standalone outline generation, embedding will be handled when used in job context
 
   return parseResult;
 };
@@ -847,7 +922,8 @@ export const regenerateOutlineWithUserPrompt = async (
   existingOutline: StoryOutline,
   userPrompt: string,
   preferences: UserPreferences,
-  currentChapterIndex: number
+  currentChapterIndex: number,
+  jobId?: string
 ): Promise<Result<StoryOutline>> => {
   console.log(`🔄 Regenerating outline with user prompt starting from chapter ${currentChapterIndex + 1} (index ${currentChapterIndex})`);
   console.log(`📝 User prompt: ${userPrompt}`);
@@ -953,8 +1029,32 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
 
   console.log(`📋 Combined ${completedChapters.length} existing + ${newChapters.length} new = ${combinedChapters.length} total chapters`);
 
+  const finalOutline = { chapters: combinedChapters as readonly Chapter[] };
+
+  // Generate and save outline embedding to sequence if jobId provided
+  if (jobId) {
+    try {
+      const { data: jobData, error: jobError } = await supabase
+        .from("generation_jobs")
+        .select("sequence_id")
+        .eq("id", jobId)
+        .single();
+
+      if (jobError) {
+        console.error(`❌ Failed to fetch job sequence_id:`, jobError);
+      } else if (jobData?.sequence_id) {
+        const embeddingResult = await generateOutlineEmbedding(finalOutline);
+        if (embeddingResult) {
+          await saveOutlineEmbedding(jobData.sequence_id, embeddingResult);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error generating outline embedding:', error);
+    }
+  }
+
   return {
     success: true,
-    data: { chapters: combinedChapters as readonly Chapter[] }
+    data: finalOutline
   };
 };
