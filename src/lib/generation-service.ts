@@ -50,6 +50,10 @@ export {
 } from "./generation/outline.js";
 
 export {
+  generateSequenceMetadata
+} from "./ai/client.js";
+
+export {
   generateCompleteFirstChapter,
   generateChapterByIndex,
   generateFirstChapter

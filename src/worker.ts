@@ -159,6 +159,15 @@ async function processGenerationJob(job: GenerationJob) {
       } else {
         console.log(`✅ Regenerated outline saved for job ${job.id}`);
         await updateJobProgress(job.id, "regenerated_outline_saved", 20);
+
+        // Update sequence with title and description
+        if (job.sequence_id && outline.title && outline.description) {
+          try {
+            await updateSequenceMetadata(job.sequence_id, outline.title, outline.description);
+          } catch (error) {
+            console.error(`❌ Error updating sequence metadata for job ${job.id}:`, error);
+          }
+        }
       }
     } else if (job.story_outline) {
       console.log(`📋 Resuming with existing outline for job ${job.id}`);
@@ -205,6 +214,15 @@ async function processGenerationJob(job: GenerationJob) {
             }
           } catch (error) {
             console.error(`❌ Error generating outline embedding for job ${job.id}:`, error);
+          }
+        }
+
+        // Update sequence with title and description
+        if (job.sequence_id && outline.title && outline.description) {
+          try {
+            await updateSequenceMetadata(job.sequence_id, outline.title, outline.description);
+          } catch (error) {
+            console.error(`❌ Error updating sequence metadata for job ${job.id}:`, error);
           }
         }
       }
@@ -566,6 +584,31 @@ async function cleanupOrphanedChapters() {
     console.log(`✅ Orphaned chapter cleanup completed`);
   } catch (error) {
     console.error("❌ Error in cleanupOrphanedChapters:", error);
+  }
+}
+
+async function updateSequenceMetadata(sequenceId: string, title: string, description: string) {
+  try {
+    console.log(`📝 Updating sequence ${sequenceId} with title: "${title}"`);
+    
+    const { error } = await supabase
+      .from("sequences")
+      .update({
+        name: title,
+        description: description,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sequenceId);
+
+    if (error) {
+      console.error(`❌ Failed to update sequence metadata for ${sequenceId}:`, error);
+      throw error;
+    } else {
+      console.log(`✅ Successfully updated sequence ${sequenceId} metadata`);
+    }
+  } catch (error) {
+    console.error(`❌ Error in updateSequenceMetadata for ${sequenceId}:`, error);
+    throw error;
   }
 }
 

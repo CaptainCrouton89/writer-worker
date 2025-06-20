@@ -9,9 +9,9 @@ import {
   STORY_LENGTH_PAGES 
 } from "../constants/generation.js";
 import { buildUserContext, buildOutlinePrompt } from "../prompts/outline.js";
-import { parseOutlineResponse } from "../utils/outline.js";
+import { parseOutlineResponse, outlineToText } from "../utils/outline.js";
 import { generateOutlineEmbedding, saveOutlineEmbedding } from "../utils/embedding.js";
-import { callAI } from "../ai/client.js";
+import { callAI, generateSequenceMetadata } from "../ai/client.js";
 
 // Generate story outline only
 export const generateStoryOutline = async (
@@ -38,9 +38,26 @@ export const generateStoryOutline = async (
   }
   console.log(`📋 Parsed ${parseResult.data.chapters.length} chapters`);
 
+  // Generate title and description
+  console.log("🎯 Generating sequence title and description...");
+  const outlineText = outlineToText(parseResult.data);
+  const metadataResult = await generateSequenceMetadata(outlineText, preferences, temperature);
+  
+  let finalOutline = parseResult.data;
+  if (metadataResult.success) {
+    console.log("✅ Sequence metadata generated successfully");
+    finalOutline = {
+      ...parseResult.data,
+      title: metadataResult.data.title,
+      description: metadataResult.data.description
+    };
+  } else {
+    console.warn("⚠️ Failed to generate sequence metadata:", metadataResult.error);
+  }
+
   // Note: For standalone outline generation, embedding will be handled when used in job context
 
-  return parseResult;
+  return { success: true, data: finalOutline };
 };
 
 // Regenerate outline with user prompt, preserving completed chapters
@@ -155,7 +172,23 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
 
   console.log(`📋 Combined ${completedChapters.length} existing + ${newChapters.length} new = ${combinedChapters.length} total chapters`);
 
-  const finalOutline = { chapters: combinedChapters as readonly Chapter[] };
+  let finalOutline: StoryOutline = { chapters: combinedChapters as readonly Chapter[] };
+
+  // Generate title and description for the updated outline
+  console.log("🎯 Generating updated sequence title and description...");
+  const outlineText = outlineToText(finalOutline);
+  const metadataResult = await generateSequenceMetadata(outlineText, preferences, temperature);
+  
+  if (metadataResult.success) {
+    console.log("✅ Updated sequence metadata generated successfully");
+    finalOutline = {
+      ...finalOutline,
+      title: metadataResult.data.title,
+      description: metadataResult.data.description
+    };
+  } else {
+    console.warn("⚠️ Failed to generate updated sequence metadata:", metadataResult.error);
+  }
 
   // Generate and save outline embedding to sequence if jobId provided
   if (jobId) {

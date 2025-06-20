@@ -23,6 +23,8 @@ export interface Chapter {
 
 export interface StoryOutline {
   readonly chapters: readonly Chapter[];
+  readonly title?: string;
+  readonly description?: string;
 }
 
 export type Result<T, E = string> =

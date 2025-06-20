@@ -1,12 +1,12 @@
 // Prompt building functions for story outline generation
 
-import { UserPreferences } from "../types/generation.js";
-import { 
-  SPICE_LEVELS, 
-  STORY_LENGTHS, 
-  STORY_LENGTH_PAGES, 
-  STORY_LENGTH_CONFIG 
+import {
+  SPICE_LEVELS,
+  STORY_LENGTHS,
+  STORY_LENGTH_CONFIG,
+  STORY_LENGTH_PAGES,
 } from "../constants/generation.js";
+import { UserPreferences } from "../types/generation.js";
 
 export const buildUserContext = (preferences: UserPreferences): string => {
   const settings =
