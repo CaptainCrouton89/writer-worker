@@ -268,12 +268,21 @@ export const parseOutlineResponse = (
   }
 };
 
-export const extractFirstChapter = (outline: StoryOutline): Result<Chapter> => {
+export const extractChapterByIndex = (outline: StoryOutline, chapterIndex: number): Result<Chapter> => {
   if (outline.chapters.length === 0) {
     return { success: false, error: "No chapters available" };
   }
 
-  return { success: true, data: outline.chapters[0] };
+  if (chapterIndex < 0 || chapterIndex >= outline.chapters.length) {
+    return { success: false, error: `Chapter index ${chapterIndex} is out of bounds. Available chapters: ${outline.chapters.length}` };
+  }
+
+  return { success: true, data: outline.chapters[chapterIndex] };
+};
+
+// Keep backward compatibility
+export const extractFirstChapter = (outline: StoryOutline): Result<Chapter> => {
+  return extractChapterByIndex(outline, 0);
 };
 
 export const buildBulletPrompt = (
@@ -400,14 +409,15 @@ const callAI = async (
   }
 };
 
-// Generate complete first chapter by combining all bullets
+// Generate complete chapter by combining all bullets
 export const generateCompleteFirstChapter = async (
   preferences: UserPreferences,
   chapterId?: string,
   progressCallback?: (step: string, progress: number) => Promise<void>,
   existingOutline?: StoryOutline,
   resumeFromPartialContent?: boolean,
-  jobId?: string
+  jobId?: string,
+  chapterIndex: number = 0
 ): Promise<Result<string>> => {
   console.log("🚀 Starting story generation");
   console.log("📝 User preferences:", buildUserContext(preferences));
@@ -446,13 +456,13 @@ export const generateCompleteFirstChapter = async (
     outline = parseResult.data;
   }
 
-  const chapterResult = extractFirstChapter(outline);
+  const chapterResult = extractChapterByIndex(outline, chapterIndex);
   if (!chapterResult.success) {
     console.error("❌ Chapter extraction failed:", chapterResult.error);
     return chapterResult;
   }
   console.log(
-    `📖 First chapter: "${chapterResult.data.name}" (${chapterResult.data.bullets.length} plot points)`
+    `📖 Chapter ${chapterIndex + 1}: "${chapterResult.data.name}" (${chapterResult.data.bullets.length} plot points)`
   );
 
   if (progressCallback) {

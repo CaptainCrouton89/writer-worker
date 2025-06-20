@@ -99,6 +99,21 @@ async function processGenerationJob(job: GenerationJob) {
     // Parse user preferences from the job
     const preferences = job.user_preferences as unknown as UserPreferences;
 
+    // Get chapter index from chapter_sequence_map
+    const { data: chapterMapping, error: chapterMappingError } = await supabase
+      .from("chapter_sequence_map")
+      .select("chapter_index")
+      .eq("chapter_id", job.chapter_id)
+      .single();
+
+    if (chapterMappingError) {
+      console.error(`❌ Failed to get chapter index for job ${job.id}:`, chapterMappingError);
+      throw new Error(`Failed to get chapter index: ${chapterMappingError.message}`);
+    }
+
+    const chapterIndex = chapterMapping.chapter_index;
+    console.log(`📖 Processing chapter ${chapterIndex + 1} for job ${job.id}`);
+
     // Check if we need to resume or start fresh
     let outline: StoryOutline;
     if (job.story_outline) {
@@ -153,7 +168,8 @@ async function processGenerationJob(job: GenerationJob) {
       },
       outline, // Pass the outline we already have
       isResumeJob, // Enable resume functionality if this is a resume job
-      job.id // Pass job ID for bullet progress tracking
+      job.id, // Pass job ID for bullet progress tracking
+      chapterIndex // Pass chapter index to generate correct chapter
     );
     if (!generationResult.success) {
       throw new Error(generationResult.error);
