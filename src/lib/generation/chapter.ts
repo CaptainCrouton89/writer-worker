@@ -1,6 +1,6 @@
 // Chapter generation functions
 
-import { supabase } from "../supabase.js";
+import { supabase, getPreviousChapterContext } from "../supabase.js";
 import { UserPreferences, StoryOutline, Result } from "../types/generation.js";
 import { TEMPERATURE_BY_SPICE, SPICE_LEVELS } from "../constants/generation.js";
 import { buildUserContext, buildOutlinePrompt, buildOutlineSystemPrompt } from "../prompts/outline.js";
@@ -150,6 +150,30 @@ export const generateCompleteFirstChapter = async (
 
   const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
 
+  // Get previous chapter context for chapters after the first one
+  let previousChapterContext: string | null = null;
+  if (chapterIndex > 0 && jobId) {
+    console.log(`🔍 Retrieving previous chapter context for chapter ${chapterIndex + 1}...`);
+    try {
+      const { data: jobData, error: jobError } = await supabase
+        .from("generation_jobs")
+        .select("sequence_id")
+        .eq("id", jobId)
+        .single();
+
+      if (jobError || !jobData?.sequence_id) {
+        console.warn(`❌ Could not retrieve sequence_id for job ${jobId}:`, jobError);
+      } else {
+        previousChapterContext = await getPreviousChapterContext(jobData.sequence_id, chapterIndex);
+        if (previousChapterContext) {
+          console.log(`✅ Retrieved previous chapter context (${previousChapterContext.length} characters)`);
+        }
+      }
+    } catch (error) {
+      console.warn(`❌ Error retrieving previous chapter context:`, error);
+    }
+  }
+
   for (let i = startFromBulletIndex; i < chapterResult.data.bullets.length; i++) {
     const bullet = chapterResult.data.bullets[i];
     const nextBullet =
@@ -163,7 +187,9 @@ export const generateCompleteFirstChapter = async (
       previousBulletContent,
       nextBullet,
       allPreviousContent,
-      preferences
+      preferences,
+      // Only pass previous chapter context for the first bullet
+      i === 0 ? previousChapterContext || undefined : undefined
     );
     console.log(
       `\n🔄 Generating bullet ${i + 1}/${chapterResult.data.bullets.length}: "${
@@ -253,7 +279,8 @@ export const generateCompleteFirstChapter = async (
 export const generateChapterByIndex = async (
   preferences: UserPreferences,
   outline: StoryOutline,
-  chapterIndex: number
+  chapterIndex: number,
+  sequenceId?: string
 ): Promise<Result<string>> => {
   if (chapterIndex < 0 || chapterIndex >= outline.chapters.length) {
     return { success: false, error: "Invalid chapter index" };
@@ -270,6 +297,20 @@ export const generateChapterByIndex = async (
   let previousBulletContent = "";
   let allPreviousContent = "";
 
+  // Get previous chapter context for chapters after the first one
+  let previousChapterContext: string | null = null;
+  if (chapterIndex > 0 && sequenceId) {
+    console.log(`🔍 Retrieving previous chapter context for chapter ${chapterIndex + 1}...`);
+    try {
+      previousChapterContext = await getPreviousChapterContext(sequenceId, chapterIndex);
+      if (previousChapterContext) {
+        console.log(`✅ Retrieved previous chapter context (${previousChapterContext.length} characters)`);
+      }
+    } catch (error) {
+      console.warn(`❌ Error retrieving previous chapter context:`, error);
+    }
+  }
+
   for (let i = 0; i < chapter.bullets.length; i++) {
     const bullet = chapter.bullets[i];
     const nextBullet =
@@ -281,7 +322,9 @@ export const generateChapterByIndex = async (
       previousBulletContent,
       nextBullet,
       allPreviousContent,
-      preferences
+      preferences,
+      // Only pass previous chapter context for the first bullet
+      i === 0 ? previousChapterContext || undefined : undefined
     );
 
     console.log(

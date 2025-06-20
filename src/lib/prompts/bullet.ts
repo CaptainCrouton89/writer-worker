@@ -74,7 +74,8 @@ export const buildBulletPrompt = (
   previousContent?: string,
   nextBullet?: ChapterBullet,
   allPreviousContent?: string,
-  preferences?: UserPreferences
+  preferences?: UserPreferences,
+  previousChapterContext?: string
 ): string => {
   const isFirstBullet = bullet.index === 0;
   const isLastBullet = bullet.index === chapter.bullets.length - 1;
@@ -95,11 +96,23 @@ ${chapter.bullets.map((b, i) => `${i + 1}. ${b.text}`).join("\n")}`;
   let prompt = "";
 
   if (isFirstBullet && !previousContent) {
-    prompt += `<bullet_task>
+    if (previousChapterContext) {
+      prompt += `<previous_chapter_context>
+${previousChapterContext}
+</previous_chapter_context>
+
+<bullet_task>
+Write narrative for: "${bullet.text}"
+This is the first bullet in Chapter: "${chapter.name}"
+Create an engaging opening that covers this bullet point and provides smooth continuity from the previous chapter.
+</bullet_task>`;
+    } else {
+      prompt += `<bullet_task>
 Write narrative for: "${bullet.text}"
 This is the first bullet in Chapter: "${chapter.name}"
 Create an engaging opening that covers this bullet point.
 </bullet_task>`;
+    }
   } else if (previousContent && !isLastBullet && nextBullet) {
     if (allPreviousContent && allPreviousContent.length > 500) {
       prompt = `<story_context>
@@ -165,7 +178,8 @@ export const buildChapterPrompt = (
     undefined,
     chapter.bullets[1],
     undefined,
-    preferences
+    preferences,
+    undefined
   );
 };
 
