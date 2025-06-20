@@ -8,12 +8,14 @@ import { Result } from "../types/generation.js";
 // AI interaction function
 export const callAI = async (
   prompt: string,
-  temperature: number = 0.7
+  temperature: number = 0.7,
+  system?: string
 ): Promise<Result<string>> => {
   try {
     const { text } = await generateText({
       model: google("gemini-2.5-pro"),
       prompt,
+      system,
       temperature,
     });
 

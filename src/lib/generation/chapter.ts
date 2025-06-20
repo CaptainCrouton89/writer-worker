@@ -2,9 +2,9 @@
 
 import { supabase } from "../supabase.js";
 import { UserPreferences, StoryOutline, Result } from "../types/generation.js";
-import { TEMPERATURE_BY_SPICE } from "../constants/generation.js";
-import { buildUserContext, buildOutlinePrompt } from "../prompts/outline.js";
-import { buildBulletPrompt } from "../prompts/bullet.js";
+import { TEMPERATURE_BY_SPICE, SPICE_LEVELS } from "../constants/generation.js";
+import { buildUserContext, buildOutlinePrompt, buildOutlineSystemPrompt } from "../prompts/outline.js";
+import { buildBulletPrompt, buildFictionSystemPrompt } from "../prompts/bullet.js";
 import { parseOutlineResponse, extractChapterByIndex } from "../utils/outline.js";
 import { generateOutlineEmbedding, saveOutlineEmbedding } from "../utils/embedding.js";
 import { callAI } from "../ai/client.js";
@@ -33,10 +33,11 @@ export const generateCompleteFirstChapter = async (
     }
   } else {
     const outlinePrompt = buildOutlinePrompt(preferences);
+    const systemPrompt = buildOutlineSystemPrompt(preferences);
     console.log("\n🔮 Requesting story outline from AI...");
 
     const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
-    const outlineResult = await callAI(outlinePrompt, temperature);
+    const outlineResult = await callAI(outlinePrompt, temperature, systemPrompt);
     if (!outlineResult.success) {
       console.error("❌ Outline generation failed:", outlineResult.error);
       return outlineResult;
@@ -170,7 +171,9 @@ export const generateCompleteFirstChapter = async (
       }"`
     );
 
-    const bulletResult = await callAI(bulletPrompt, temperature);
+    const spiceLevel = SPICE_LEVELS[preferences.spiceLevel];
+    const systemPrompt = buildFictionSystemPrompt(spiceLevel);
+    const bulletResult = await callAI(bulletPrompt, temperature, systemPrompt);
     if (!bulletResult.success) {
       console.error(
         `❌ Bullet ${i + 1} generation failed:`,
@@ -288,7 +291,9 @@ export const generateChapterByIndex = async (
     );
 
     const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
-    const bulletResult = await callAI(bulletPrompt, temperature);
+    const spiceLevel = SPICE_LEVELS[preferences.spiceLevel];
+    const systemPrompt = buildFictionSystemPrompt(spiceLevel);
+    const bulletResult = await callAI(bulletPrompt, temperature, systemPrompt);
     if (!bulletResult.success) {
       console.error(
         `❌ Bullet ${i + 1} generation failed:`,

@@ -1,8 +1,8 @@
 // Bullet content generation functions
 
 import { ChapterBullet, Chapter, Result, UserPreferences } from "../types/generation.js";
-import { TEMPERATURE_BY_SPICE } from "../constants/generation.js";
-import { buildBulletPrompt } from "../prompts/bullet.js";
+import { TEMPERATURE_BY_SPICE, SPICE_LEVELS } from "../constants/generation.js";
+import { buildBulletPrompt, buildFictionSystemPrompt } from "../prompts/bullet.js";
 import { callAI } from "../ai/client.js";
 
 // Generate content for a specific bullet point
@@ -35,7 +35,11 @@ export const generateBulletContent = async (
   const temperature = preferences
     ? TEMPERATURE_BY_SPICE[preferences.spiceLevel]
     : 0.7;
-  const result = await callAI(bulletPrompt, temperature);
+  const spiceLevel = preferences
+    ? SPICE_LEVELS[preferences.spiceLevel]
+    : "Steamy";
+  const systemPrompt = buildFictionSystemPrompt(spiceLevel);
+  const result = await callAI(bulletPrompt, temperature, systemPrompt);
   if (result.success) {
     console.log(
       `✅ Bullet ${bullet.index + 1} generated successfully (${

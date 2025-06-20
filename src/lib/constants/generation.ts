@@ -1,6 +1,11 @@
 // Constants for story generation
 
 export const SPICE_LEVELS = ["Tease", "Steamy", "Spicy hot"] as const;
+export const SPICE_DESCRIPTOR = {
+  Tease: "a bit steamy",
+  Steamy: "explicit",
+  "Spicy hot": "explicit and hardcore",
+} as const;
 export const STORY_LENGTHS = ["Short story", "Novella", "Slow burn"] as const;
 export const STORY_LENGTH_PAGES = [20, 50, 100] as const;
 

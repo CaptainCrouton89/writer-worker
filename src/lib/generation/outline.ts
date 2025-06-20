@@ -1,16 +1,24 @@
 // Outline generation and regeneration functions
 
 import { supabase } from "../supabase.js";
-import { UserPreferences, StoryOutline, Result, Chapter } from "../types/generation.js";
-import { 
-  TEMPERATURE_BY_SPICE, 
-  STORY_LENGTH_CONFIG, 
-  SPICE_LEVELS, 
-  STORY_LENGTH_PAGES 
+import {
+  UserPreferences,
+  StoryOutline,
+  Result,
+  Chapter,
+} from "../types/generation.js";
+import {
+  TEMPERATURE_BY_SPICE,
+  STORY_LENGTH_CONFIG,
+  SPICE_LEVELS,
+  STORY_LENGTH_PAGES,
 } from "../constants/generation.js";
-import { buildUserContext, buildOutlinePrompt } from "../prompts/outline.js";
+import { buildUserContext, buildOutlinePrompt, buildOutlineSystemPrompt } from "../prompts/outline.js";
 import { parseOutlineResponse, outlineToText } from "../utils/outline.js";
-import { generateOutlineEmbedding, saveOutlineEmbedding } from "../utils/embedding.js";
+import {
+  generateOutlineEmbedding,
+  saveOutlineEmbedding,
+} from "../utils/embedding.js";
 import { callAI, generateSequenceMetadata } from "../ai/client.js";
 
 // Generate story outline only
@@ -21,10 +29,11 @@ export const generateStoryOutline = async (
   console.log("📝 User preferences:", buildUserContext(preferences));
 
   const outlinePrompt = buildOutlinePrompt(preferences);
+  const systemPrompt = buildOutlineSystemPrompt(preferences);
   console.log("\n🔮 Requesting story outline from AI...");
 
   const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
-  const outlineResult = await callAI(outlinePrompt, temperature);
+  const outlineResult = await callAI(outlinePrompt, temperature, systemPrompt);
   if (!outlineResult.success) {
     console.error("❌ Outline generation failed:", outlineResult.error);
     return outlineResult;
@@ -41,18 +50,25 @@ export const generateStoryOutline = async (
   // Generate title and description
   console.log("🎯 Generating sequence title and description...");
   const outlineText = outlineToText(parseResult.data);
-  const metadataResult = await generateSequenceMetadata(outlineText, preferences, temperature);
-  
+  const metadataResult = await generateSequenceMetadata(
+    outlineText,
+    preferences,
+    temperature
+  );
+
   let finalOutline = parseResult.data;
   if (metadataResult.success) {
     console.log("✅ Sequence metadata generated successfully");
     finalOutline = {
       ...parseResult.data,
       title: metadataResult.data.title,
-      description: metadataResult.data.description
+      description: metadataResult.data.description,
     };
   } else {
-    console.warn("⚠️ Failed to generate sequence metadata:", metadataResult.error);
+    console.warn(
+      "⚠️ Failed to generate sequence metadata:",
+      metadataResult.error
+    );
   }
 
   // Note: For standalone outline generation, embedding will be handled when used in job context
@@ -68,42 +84,86 @@ export const regenerateOutlineWithUserPrompt = async (
   currentChapterIndex: number,
   jobId?: string
 ): Promise<Result<StoryOutline>> => {
-  console.log(`🔄 Regenerating outline with user prompt starting from chapter ${currentChapterIndex + 1} (index ${currentChapterIndex})`);
+  console.log(
+    `🔄 Regenerating outline with user prompt starting from chapter ${
+      currentChapterIndex + 1
+    } (index ${currentChapterIndex})`
+  );
   console.log(`📝 User prompt: ${userPrompt}`);
 
-  const config = STORY_LENGTH_CONFIG[preferences.storyLength as keyof typeof STORY_LENGTH_CONFIG];
+  const config =
+    STORY_LENGTH_CONFIG[
+      preferences.storyLength as keyof typeof STORY_LENGTH_CONFIG
+    ];
   const spiceLevel = SPICE_LEVELS[preferences.spiceLevel];
   const pageCount = STORY_LENGTH_PAGES[preferences.storyLength];
 
   // Build context from completed chapters (excluding current chapter being worked on)
-  const completedChapters = existingOutline.chapters.slice(0, currentChapterIndex);
+  const completedChapters = existingOutline.chapters.slice(
+    0,
+    currentChapterIndex
+  );
   const completedContext = completedChapters
-    .map((ch, i) => `Chapter ${i + 1}: ${ch.name}\n${ch.bullets.map(b => `- ${b.text}`).join('\n')}`)
-    .join('\n\n');
+    .map(
+      (ch, i) =>
+        `Chapter ${i + 1}: ${ch.name}\n${ch.bullets
+          .map((b) => `- ${b.text}`)
+          .join("\n")}`
+    )
+    .join("\n\n");
+
+  console.log(
+    `📋 Completed chapters: ${completedChapters.length} (indices 0-${
+      currentChapterIndex - 1
+    })`
+  );
+  console.log(
+    `📋 Current chapter index: ${currentChapterIndex} (Chapter ${
+      currentChapterIndex + 1
+    })`
+  );
 
   // Calculate remaining chapters (including current chapter being worked on)
   const remainingChapterCount = config.chapterCount - currentChapterIndex;
-  
+  console.log(
+    `📋 Remaining chapters to regenerate: ${remainingChapterCount} (from Chapter ${
+      currentChapterIndex + 1
+    })`
+  );
+
   if (remainingChapterCount <= 0) {
-    console.log('✅ No remaining chapters to regenerate');
+    console.log("✅ No remaining chapters to regenerate");
     return { success: true, data: existingOutline };
   }
 
   // Build settings context
-  const settings = preferences.customSetting || preferences.selectedSettings.join(", ") || "a contemporary setting";
-  const plots = preferences.customPlot || preferences.selectedPlots.join(", ") || "forbidden attraction";
-  const themes = preferences.customThemes || preferences.selectedThemes.join(", ") || "passion and desire";
+  const settings =
+    preferences.customSetting ||
+    preferences.selectedSettings.join(", ") ||
+    "a contemporary setting";
+  const plots =
+    preferences.customPlot ||
+    preferences.selectedPlots.join(", ") ||
+    "forbidden attraction";
+  const themes =
+    preferences.customThemes ||
+    preferences.selectedThemes.join(", ") ||
+    "passion and desire";
 
   const smutDescriptors = {
     Tease: "sensual tension and suggestive scenes",
     Steamy: "passionate encounters with moderate explicit content",
-    "Spicy hot": "highly explicit sexual content with detailed physical descriptions",
+    "Spicy hot":
+      "highly explicit sexual content with detailed physical descriptions",
   };
 
   const smutRequirements = {
-    Tease: "subtle physical attraction, lingering touches, and building sexual tension",
-    Steamy: "passionate kissing, intimate touching, and moderately explicit sexual scenes",
-    "Spicy hot": "explicit physical descriptions of sex and the characters' body parts during sex",
+    Tease:
+      "subtle physical attraction, lingering touches, and building sexual tension",
+    Steamy:
+      "passionate kissing, intimate touching, and moderately explicit sexual scenes",
+    "Spicy hot":
+      "explicit physical descriptions of sex and the characters' body parts during sex",
   };
 
   const regeneratePrompt = `You are updating a story outline based on new user direction. The story is a ${pageCount} page smut story about ${plots} set in ${settings}, exploring themes of ${themes}.
@@ -116,17 +176,25 @@ ${completedContext}
 ${userPrompt}
 </user_direction>
 
-Generate ${remainingChapterCount} new chapter names and plot points that continue from where the completed chapters left off, incorporating the user's new direction. For each chapter list ${config.bulletsPerChapter} bulleted plot points. The bullet points should include ${smutDescriptors[spiceLevel]} and require that those scenes focus on ${smutRequirements[spiceLevel]}.
+Generate ${remainingChapterCount} new chapter names and plot points that continue from where the completed chapters left off, incorporating the user's new direction. For each chapter list ${
+    config.bulletsPerChapter
+  } bulleted plot points. The bullet points should include ${
+    smutDescriptors[spiceLevel]
+  } and require that those scenes focus on ${smutRequirements[spiceLevel]}.
 
 <requirements>
-- Create exactly ${remainingChapterCount} chapters (starting from Chapter ${currentChapterIndex + 1})
+- Create exactly ${remainingChapterCount} chapters (starting from Chapter ${
+    currentChapterIndex + 1
+  })
 - Each chapter must have exactly ${config.bulletsPerChapter} bullet points
 - Include ${smutDescriptors[spiceLevel]}
 - Focus on ${smutRequirements[spiceLevel]}
 - Be descriptive and provocative appropriate to the ${spiceLevel} level
 - Bullet points should be longer and more detailed than typical plot points
 - Each bullet point should be 2-3 sentences that clearly describe a scene, emotional beats, and specific actions
-- Make bullet points substantial enough to generate ${config.pagesPerBullet} pages of content each
+- Make bullet points substantial enough to generate ${
+    config.pagesPerBullet
+  } pages of content each
 - Ensure continuity from the completed chapters
 - Incorporate the user's new direction naturally into the story progression
 </requirements>
@@ -152,7 +220,8 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
 </output_format>`;
 
   const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
-  const outlineResult = await callAI(regeneratePrompt, temperature);
+  const systemPrompt = buildOutlineSystemPrompt(preferences);
+  const outlineResult = await callAI(regeneratePrompt, temperature, systemPrompt);
   if (!outlineResult.success) {
     console.error("❌ Outline regeneration failed:", outlineResult.error);
     return outlineResult;
@@ -170,24 +239,40 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
   const newChapters = parseResult.data.chapters;
   const combinedChapters = [...completedChapters, ...newChapters];
 
-  console.log(`📋 Combined ${completedChapters.length} existing + ${newChapters.length} new = ${combinedChapters.length} total chapters`);
+  console.log(
+    `📋 Combined ${completedChapters.length} existing + ${newChapters.length} new = ${combinedChapters.length} total chapters`
+  );
+  console.log(
+    `📋 Combined chapter titles: ${combinedChapters
+      .map((ch, i) => `${i + 1}. ${ch.name}`)
+      .join(", ")}`
+  );
 
-  let finalOutline: StoryOutline = { chapters: combinedChapters as readonly Chapter[] };
+  let finalOutline: StoryOutline = {
+    chapters: combinedChapters as readonly Chapter[],
+  };
 
   // Generate title and description for the updated outline
   console.log("🎯 Generating updated sequence title and description...");
   const outlineText = outlineToText(finalOutline);
-  const metadataResult = await generateSequenceMetadata(outlineText, preferences, temperature);
-  
+  const metadataResult = await generateSequenceMetadata(
+    outlineText,
+    preferences,
+    temperature
+  );
+
   if (metadataResult.success) {
     console.log("✅ Updated sequence metadata generated successfully");
     finalOutline = {
       ...finalOutline,
       title: metadataResult.data.title,
-      description: metadataResult.data.description
+      description: metadataResult.data.description,
     };
   } else {
-    console.warn("⚠️ Failed to generate updated sequence metadata:", metadataResult.error);
+    console.warn(
+      "⚠️ Failed to generate updated sequence metadata:",
+      metadataResult.error
+    );
   }
 
   // Generate and save outline embedding to sequence if jobId provided
@@ -208,12 +293,12 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
         }
       }
     } catch (error) {
-      console.error('❌ Error generating outline embedding:', error);
+      console.error("❌ Error generating outline embedding:", error);
     }
   }
 
   return {
     success: true,
-    data: finalOutline
+    data: finalOutline,
   };
 };

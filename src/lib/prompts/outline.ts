@@ -1,12 +1,108 @@
 // Prompt building functions for story outline generation
 
 import {
+  SPICE_DESCRIPTOR,
   SPICE_LEVELS,
   STORY_LENGTHS,
   STORY_LENGTH_CONFIG,
   STORY_LENGTH_PAGES,
 } from "../constants/generation.js";
 import { UserPreferences } from "../types/generation.js";
+
+// System prompt for outline generation
+export const buildOutlineSystemPrompt = (
+  preferences: UserPreferences
+): string => {
+  const spiceLevel = SPICE_LEVELS[preferences.spiceLevel];
+  const spiceDescriptor = SPICE_DESCRIPTOR[spiceLevel];
+  const storyLength = STORY_LENGTHS[preferences.storyLength];
+  const config =
+    STORY_LENGTH_CONFIG[
+      preferences.storyLength as keyof typeof STORY_LENGTH_CONFIG
+    ];
+
+  const spiceGuidelines = {
+    Tease: `- Focus on emotional tension, longing glances, and suggestive situations
+- Build anticipation through subtle physical contact and romantic chemistry
+- Include sensual moments that imply intimacy without explicit details
+- Emphasize the emotional journey and connection between characters`,
+    Steamy: `- Include passionate romantic encounters with moderate sexual content
+- Balance emotional depth with physical attraction and intimate scenes
+- Feature kissing, touching, and sexual tension that leads to moderately explicit encounters
+- Show both the emotional and physical aspects of the relationship`,
+    "Spicy hot": `- Create highly explicit sexual scenarios with graphic physical descriptions
+- Focus extensively on sexual encounters, desires, and physical intimacy
+- Include detailed sexual content throughout the story progression
+- Emphasize raw passion, lust, and uninhibited sexual exploration`,
+  };
+
+  const bulletExamples = {
+    Tease: {
+      0: `- Sarah enters the coffee shop and immediately locks eyes with the mysterious barista, feeling an unexpected flutter of attraction that makes her stomach tighten with anticipation`,
+      1: `- During their first dance lesson, Marcus positions himself behind Elena, his hands guiding her hips as she feels the heat of his body pressing against her back, both of them struggling to maintain professional boundaries`,
+      2: `- After weeks of stolen glances and subtle flirtation, James finally corners Rebecca in the supply closet, their heated argument about the project dissolving into breathless tension as he pins her against the wall, their faces inches apart`,
+    },
+    Steamy: {
+      0: `- When the elevator breaks down, trapped alone with her rival colleague, Emma finds herself pressed against him in the darkness, their professional animosity giving way to undeniable chemistry as his breath tickles her ear`,
+      1: `- The cooking class becomes intensely intimate when Chef Rodriguez stands behind Maya, his strong hands covering hers as he guides the knife, his proximity making her pulse race as she feels every muscle in his chest against her back`,
+      2: `- During the midnight thunderstorm, when the power goes out in the cabin, Alex and Jordan finally give in to months of sexual tension, their first kiss becoming a passionate encounter that leads them to the bedroom`,
+    },
+    "Spicy hot": {
+      0: `- The high-stakes poker game turns into a seduction when Veronica deliberately brushes her hand against the mysterious stranger's thigh, leading to an explosive encounter in the private VIP room where boundaries are completely abandoned`,
+      1: `- What starts as an argument between rivals in the empty office building escalates into raw, primal passion as they tear at each other's clothes, their hate-fueled desire culminating in an intense sexual encounter on the conference table`,
+      2: `- The exclusive underground club's private room becomes the setting for an uninhibited threesome, where inhibitions are shed along with clothes and every fantasy becomes reality in explicit, graphic detail`,
+    },
+  };
+
+  return `You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc.
+
+<content_focus>
+${spiceGuidelines[spiceLevel]}
+</content_focus>
+
+<story_structure>
+- Create ${config.chapterCount} chapters for a ${
+    STORY_LENGTH_PAGES[preferences.storyLength]
+  } page story
+- Each chapter should have exactly ${config.bulletsPerChapter} plot points
+- Each plot point should generate approximately ${
+    config.pagesPerBullet
+  } pages of content
+- Build romantic/sexual tension progressively throughout the story
+- Include both character development and relationship progression
+</story_structure>
+
+<bullet_point_style>
+Write detailed, scene-specific bullet points that are 2-3 sentences long. Each should:
+- Describe a specific scene, location, or event
+- Include emotional beats and character motivations  
+- Specify the romantic/sexual content level appropriate for ${spiceDescriptor}
+- Provide enough detail to generate substantial content
+
+Example for ${spiceDescriptor} stories at ${spiceDescriptor} level:
+${
+  bulletExamples[spiceLevel][
+    preferences.storyLength as keyof (typeof bulletExamples)[typeof spiceLevel]
+  ]
+}
+</bullet_point_style>
+
+<output_format>
+Begin your response with: "Of course! Here is the list:"
+
+Then follow this exact structure:
+
+Chapter 1: [Chapter Title]
+- [First detailed plot point]
+- [Second detailed plot point]
+- [Third detailed plot point]
+- [Fourth detailed plot point]
+- [Fifth detailed plot point]
+
+Chapter 2: [Chapter Title]
+[Continue same format for all chapters...]
+</output_format>`;
+};
 
 export const buildUserContext = (preferences: UserPreferences): string => {
   const settings =
@@ -41,13 +137,6 @@ export const buildUserContext = (preferences: UserPreferences): string => {
 };
 
 export const buildOutlinePrompt = (preferences: UserPreferences): string => {
-  const pageCount = STORY_LENGTH_PAGES[preferences.storyLength];
-  const spiceLevel = SPICE_LEVELS[preferences.spiceLevel];
-  const config =
-    STORY_LENGTH_CONFIG[
-      preferences.storyLength as keyof typeof STORY_LENGTH_CONFIG
-    ];
-
   // Build a more contextual story premise based on preferences
   const settings =
     preferences.customSetting ||
@@ -62,79 +151,7 @@ export const buildOutlinePrompt = (preferences: UserPreferences): string => {
     preferences.selectedThemes.join(", ") ||
     "passion and desire";
 
-  // Adjust smut descriptors based on spice level
-  const smutDescriptors = {
-    Tease: "sensual tension and suggestive scenes",
-    Steamy: "passionate encounters with moderate explicit content",
-    "Spicy hot":
-      "highly explicit sexual content with detailed physical descriptions",
-  };
-
-  const smutRequirements = {
-    Tease:
-      "subtle physical attraction, lingering touches, and building sexual tension",
-    Steamy:
-      "passionate kissing, intimate touching, and moderately explicit sexual scenes",
-    "Spicy hot":
-      "explicit physical descriptions of sex and the characters' body parts during sex",
-  };
-
-  // Story length specific bullet examples
-  const bulletExamples = {
-    0: "- Sarah enters the coffee shop and immediately locks eyes with the mysterious barista, feeling an unexpected flutter of attraction that makes her stomach tighten with anticipation",
-    1: "- During their first dance lesson, Marcus positions himself behind Elena, his hands guiding her hips as she feels the heat of his body pressing against her back, both of them struggling to maintain professional boundaries",
-    2: "- After weeks of stolen glances and subtle flirtation, James finally corners Rebecca in the supply closet, their heated argument about the project dissolving into breathless tension as he pins her against the wall, their faces inches apart",
-  };
-
-  return `Generate a list of ${
-    config.chapterCount
-  } chapter names for a ${pageCount} page smut story about ${plots} set in ${settings}, exploring themes of ${themes}. For each chapter list ${
-    config.bulletsPerChapter
-  } bulleted plot points that must take place in that chapter. The bullet points should include ${
-    smutDescriptors[spiceLevel]
-  } and require that those scenes focus on ${
-    smutRequirements[spiceLevel]
-  }. Do not hold back on descriptive detail appropriate to the ${spiceLevel} spice level. Start your response with "Of course! Here is the list:"
-
-<requirements>
-- Create exactly ${config.chapterCount} chapters
-- Each chapter must have exactly ${config.bulletsPerChapter} bullet points
-- Include ${smutDescriptors[spiceLevel]}
-- Focus on ${smutRequirements[spiceLevel]}
-- Be descriptive and provocative appropriate to the ${spiceLevel} level
-- Bullet points should be longer and more detailed than typical plot points
-- Each bullet point should be 2-3 sentences that clearly describe a scene, emotional beats, and specific actions
-- Make bullet points substantial enough to generate ${
-    config.pagesPerBullet
-  } pages of content each
-</requirements>
-
-<bullet_point_example>
-Here's an example of the level of detail expected for bullet points in a ${
-    STORY_LENGTHS[preferences.storyLength]
-  }:
-${bulletExamples[preferences.storyLength as keyof typeof bulletExamples]}
-</bullet_point_example>
-
-<output_format>
-Your response must follow this EXACT format:
-
-Of course! Here is the list:
-
-Chapter 1: [Chapter Title]
-- [First bullet point describing specific scene/event]
-- [Second bullet point describing specific scene/event] 
-- [Third bullet point describing specific scene/event]
-- [Fourth bullet point describing specific scene/event]  
-- [Fifth bullet point describing specific scene/event]
-
-Chapter 2: [Chapter Title]
-- [First bullet point describing specific scene/event]
-- [Second bullet point describing specific scene/event]
-- [Third bullet point describing specific scene/event] 
-- [Fourth bullet point describing specific scene/event]
-- [Fifth bullet point describing specific scene/event]
-
-[Continue for all 5 chapters...]
-</output_format>`;
+  return `<story_premise>
+Create a story about ${plots} set in ${settings}, exploring themes of ${themes}.
+</story_premise>`;
 };
