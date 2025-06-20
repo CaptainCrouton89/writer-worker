@@ -19,7 +19,7 @@ export const callAI = async (
       temperature,
     });
 
-    return { success: true, data: text };
+    return { success: true, data: text.replace(/^Of course, here it is:/, "") };
   } catch (error) {
     return {
       success: false,

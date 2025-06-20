@@ -65,7 +65,9 @@ ${
   spiceGuidelines[spiceLevel as keyof typeof spiceGuidelines] ||
   spiceGuidelines["Steamy"]
 }
-</content_guidelines>`;
+</content_guidelines>
+
+ALWAYS begin your response with "Of course, here it is:"`;
 };
 
 export const buildBulletPrompt = (

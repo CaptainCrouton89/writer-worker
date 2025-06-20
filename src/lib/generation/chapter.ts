@@ -1,13 +1,26 @@
 // Chapter generation functions
 
-import { supabase, getPreviousChapterContext } from "../supabase.js";
-import { UserPreferences, StoryOutline, Result } from "../types/generation.js";
-import { TEMPERATURE_BY_SPICE, SPICE_LEVELS } from "../constants/generation.js";
-import { buildUserContext, buildOutlinePrompt, buildOutlineSystemPrompt } from "../prompts/outline.js";
-import { buildBulletPrompt, buildFictionSystemPrompt } from "../prompts/bullet.js";
-import { parseOutlineResponse, extractChapterByIndex } from "../utils/outline.js";
-import { generateOutlineEmbedding, saveOutlineEmbedding } from "../utils/embedding.js";
 import { callAI } from "../ai/client.js";
+import { SPICE_LEVELS, TEMPERATURE_BY_SPICE } from "../constants/generation.js";
+import {
+  buildBulletPrompt,
+  buildFictionSystemPrompt,
+} from "../prompts/bullet.js";
+import {
+  buildOutlinePrompt,
+  buildOutlineSystemPrompt,
+  buildUserContext,
+} from "../prompts/outline.js";
+import { getPreviousChapterContext, supabase } from "../supabase.js";
+import { Result, StoryOutline, UserPreferences } from "../types/generation.js";
+import {
+  generateOutlineEmbedding,
+  saveOutlineEmbedding,
+} from "../utils/embedding.js";
+import {
+  extractChapterByIndex,
+  parseOutlineResponse,
+} from "../utils/outline.js";
 
 // Generate complete chapter by combining all bullets
 export const generateCompleteFirstChapter = async (
@@ -23,7 +36,7 @@ export const generateCompleteFirstChapter = async (
   console.log("📝 User preferences:", buildUserContext(preferences));
 
   let outline: StoryOutline;
-  
+
   // Use existing outline if provided, otherwise generate new one
   if (existingOutline) {
     console.log("📋 Using existing outline");
@@ -37,7 +50,11 @@ export const generateCompleteFirstChapter = async (
     console.log("\n🔮 Requesting story outline from AI...");
 
     const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
-    const outlineResult = await callAI(outlinePrompt, temperature, systemPrompt);
+    const outlineResult = await callAI(
+      outlinePrompt,
+      temperature,
+      systemPrompt
+    );
     if (!outlineResult.success) {
       console.error("❌ Outline generation failed:", outlineResult.error);
       return outlineResult;
@@ -74,7 +91,7 @@ export const generateCompleteFirstChapter = async (
           }
         }
       } catch (error) {
-        console.error('❌ Error generating outline embedding:', error);
+        console.error("❌ Error generating outline embedding:", error);
       }
     }
   }
@@ -85,7 +102,9 @@ export const generateCompleteFirstChapter = async (
     return chapterResult;
   }
   console.log(
-    `📖 Chapter ${chapterIndex + 1}: "${chapterResult.data.name}" (${chapterResult.data.bullets.length} plot points)`
+    `📖 Chapter ${chapterIndex + 1}: "${chapterResult.data.name}" (${
+      chapterResult.data.bullets.length
+    } plot points)`
   );
 
   if (progressCallback) {
@@ -95,47 +114,75 @@ export const generateCompleteFirstChapter = async (
   // Check if we're resuming from partial content
   let fullChapterContent = "";
   let startFromBulletIndex = 0;
-  
+
   if (resumeFromPartialContent && chapterId && jobId) {
-    console.log(`🔄 Checking for existing content and bullet progress to resume from...`);
-    
+    console.log(
+      `🔄 Checking for existing content and bullet progress to resume from...`
+    );
+
     // Get existing chapter content
     const { data: existingChapter, error: chapterError } = await supabase
       .from("chapters")
       .select("content")
       .eq("id", chapterId)
       .single();
-      
+
     if (chapterError) {
-      console.error(`❌ Failed to fetch existing chapter content:`, chapterError);
+      console.error(
+        `❌ Failed to fetch existing chapter content:`,
+        chapterError
+      );
     } else if (existingChapter?.content) {
       fullChapterContent = existingChapter.content;
     }
-    
+
     // Get bullet progress from the job
     const { data: jobData, error: jobError } = await supabase
       .from("generation_jobs")
       .select("bullet_progress")
       .eq("id", jobId)
       .single();
-      
+
     if (jobError) {
       console.error(`❌ Failed to fetch job bullet progress:`, jobError);
-    } else if (jobData?.bullet_progress !== undefined && jobData.bullet_progress !== null) {
+    } else if (
+      jobData?.bullet_progress !== undefined &&
+      jobData.bullet_progress !== null
+    ) {
       // Resume from the next bullet after the last completed one
-      startFromBulletIndex = Math.min(jobData.bullet_progress + 1, chapterResult.data.bullets.length - 1);
-      console.log(`📄 Found existing content (${fullChapterContent.length} chars) and bullet progress (${jobData.bullet_progress}), resuming from bullet ${startFromBulletIndex + 1}`);
+      startFromBulletIndex = Math.min(
+        jobData.bullet_progress + 1,
+        chapterResult.data.bullets.length - 1
+      );
+      console.log(
+        `📄 Found existing content (${
+          fullChapterContent.length
+        } chars) and bullet progress (${
+          jobData.bullet_progress
+        }), resuming from bullet ${startFromBulletIndex + 1}`
+      );
     } else if (fullChapterContent.length > 0) {
       // Fallback to content-based estimation if no bullet progress is saved
       const averageBulletLength = 500;
-      const estimatedBulletsCompleted = Math.floor(fullChapterContent.length / averageBulletLength);
-      startFromBulletIndex = Math.min(estimatedBulletsCompleted, chapterResult.data.bullets.length - 1);
-      console.log(`📄 Found existing content (${fullChapterContent.length} chars), estimating resume from bullet ${startFromBulletIndex + 1}`);
+      const estimatedBulletsCompleted = Math.floor(
+        fullChapterContent.length / averageBulletLength
+      );
+      startFromBulletIndex = Math.min(
+        estimatedBulletsCompleted,
+        chapterResult.data.bullets.length - 1
+      );
+      console.log(
+        `📄 Found existing content (${
+          fullChapterContent.length
+        } chars), estimating resume from bullet ${startFromBulletIndex + 1}`
+      );
     }
-    
+
     // Skip if we're already at or past the end
     if (startFromBulletIndex >= chapterResult.data.bullets.length) {
-      console.log(`✅ Chapter already complete (${chapterResult.data.bullets.length} bullets), returning existing content`);
+      console.log(
+        `✅ Chapter already complete (${chapterResult.data.bullets.length} bullets), returning existing content`
+      );
       return {
         success: true,
         data: fullChapterContent,
@@ -153,7 +200,11 @@ export const generateCompleteFirstChapter = async (
   // Get previous chapter context for chapters after the first one
   let previousChapterContext: string | null = null;
   if (chapterIndex > 0 && jobId) {
-    console.log(`🔍 Retrieving previous chapter context for chapter ${chapterIndex + 1}...`);
+    console.log(
+      `🔍 Retrieving previous chapter context for chapter ${
+        chapterIndex + 1
+      }...`
+    );
     try {
       const { data: jobData, error: jobError } = await supabase
         .from("generation_jobs")
@@ -162,11 +213,19 @@ export const generateCompleteFirstChapter = async (
         .single();
 
       if (jobError || !jobData?.sequence_id) {
-        console.warn(`❌ Could not retrieve sequence_id for job ${jobId}:`, jobError);
+        console.warn(
+          `❌ Could not retrieve sequence_id for job ${jobId}:`,
+          jobError
+        );
       } else {
-        previousChapterContext = await getPreviousChapterContext(jobData.sequence_id, chapterIndex);
+        previousChapterContext = await getPreviousChapterContext(
+          jobData.sequence_id,
+          chapterIndex
+        );
         if (previousChapterContext) {
-          console.log(`✅ Retrieved previous chapter context (${previousChapterContext.length} characters)`);
+          console.log(
+            `✅ Retrieved previous chapter context (${previousChapterContext.length} characters)`
+          );
         }
       }
     } catch (error) {
@@ -174,7 +233,11 @@ export const generateCompleteFirstChapter = async (
     }
   }
 
-  for (let i = startFromBulletIndex; i < chapterResult.data.bullets.length; i++) {
+  for (
+    let i = startFromBulletIndex;
+    i < chapterResult.data.bullets.length;
+    i++
+  ) {
     const bullet = chapterResult.data.bullets[i];
     const nextBullet =
       i < chapterResult.data.bullets.length - 1
@@ -209,9 +272,11 @@ export const generateCompleteFirstChapter = async (
     }
 
     const bulletContent = bulletResult.data;
-    
+
     // Only add separator if we have existing content and this isn't the first new bullet
-    const needsSeparator = fullChapterContent.length > 0 && (i > startFromBulletIndex || startFromBulletIndex > 0);
+    const needsSeparator =
+      fullChapterContent.length > 0 &&
+      (i > startFromBulletIndex || startFromBulletIndex > 0);
     fullChapterContent += (needsSeparator ? "\n\n" : "") + bulletContent;
     previousBulletContent = bulletContent;
     allPreviousContent = fullChapterContent;
@@ -233,9 +298,14 @@ export const generateCompleteFirstChapter = async (
         .eq("id", chapterId);
 
       if (updateError) {
-        console.error(`❌ Failed to update chapter ${chapterId} content:`, updateError);
+        console.error(
+          `❌ Failed to update chapter ${chapterId} content:`,
+          updateError
+        );
       } else {
-        console.log(`✅ Chapter ${chapterId} content updated (${fullChapterContent.length} total characters)`);
+        console.log(
+          `✅ Chapter ${chapterId} content updated (${fullChapterContent.length} total characters)`
+        );
       }
     }
 
@@ -251,7 +321,10 @@ export const generateCompleteFirstChapter = async (
         .eq("id", jobId);
 
       if (progressError) {
-        console.error(`❌ Failed to update job ${jobId} bullet progress:`, progressError);
+        console.error(
+          `❌ Failed to update job ${jobId} bullet progress:`,
+          progressError
+        );
       } else {
         console.log(`✅ Job ${jobId} bullet progress updated to ${i}`);
       }
@@ -260,8 +333,11 @@ export const generateCompleteFirstChapter = async (
     // Update progress based on bullet completion
     if (progressCallback) {
       const progressPerBullet = 60 / chapterResult.data.bullets.length; // 60% for content generation
-      const currentProgress = 30 + ((i + 1) * progressPerBullet); // Start from 30% after outline
-      await progressCallback(`bullet_${i + 1}_completed`, Math.round(currentProgress));
+      const currentProgress = 30 + (i + 1) * progressPerBullet; // Start from 30% after outline
+      await progressCallback(
+        `bullet_${i + 1}_completed`,
+        Math.round(currentProgress)
+      );
     }
   }
 
@@ -300,11 +376,20 @@ export const generateChapterByIndex = async (
   // Get previous chapter context for chapters after the first one
   let previousChapterContext: string | null = null;
   if (chapterIndex > 0 && sequenceId) {
-    console.log(`🔍 Retrieving previous chapter context for chapter ${chapterIndex + 1}...`);
+    console.log(
+      `🔍 Retrieving previous chapter context for chapter ${
+        chapterIndex + 1
+      }...`
+    );
     try {
-      previousChapterContext = await getPreviousChapterContext(sequenceId, chapterIndex);
+      previousChapterContext = await getPreviousChapterContext(
+        sequenceId,
+        chapterIndex
+      );
       if (previousChapterContext) {
-        console.log(`✅ Retrieved previous chapter context (${previousChapterContext.length} characters)`);
+        console.log(
+          `✅ Retrieved previous chapter context (${previousChapterContext.length} characters)`
+        );
       }
     } catch (error) {
       console.warn(`❌ Error retrieving previous chapter context:`, error);
