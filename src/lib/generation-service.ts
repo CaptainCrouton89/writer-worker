@@ -900,7 +900,7 @@ ${userPrompt}
 Generate ${remainingChapterCount} new chapter names and plot points that continue from where the completed chapters left off, incorporating the user's new direction. For each chapter list ${config.bulletsPerChapter} bulleted plot points. The bullet points should include ${smutDescriptors[spiceLevel]} and require that those scenes focus on ${smutRequirements[spiceLevel]}.
 
 <requirements>
-- Create exactly ${remainingChapterCount} chapters (continuing from Chapter ${currentChapterIndex + 2})
+- Create exactly ${remainingChapterCount} chapters (continuing from Chapter ${currentChapterIndex + 1})
 - Each chapter must have exactly ${config.bulletsPerChapter} bullet points
 - Include ${smutDescriptors[spiceLevel]}
 - Focus on ${smutRequirements[spiceLevel]}
@@ -915,14 +915,14 @@ Generate ${remainingChapterCount} new chapter names and plot points that continu
 <output_format>
 Your response must follow this EXACT format:
 
-Chapter ${currentChapterIndex + 2}: [Chapter Title]
+Chapter ${currentChapterIndex + 1}: [Chapter Title]
 - [First bullet point describing specific scene/event]
 - [Second bullet point describing specific scene/event] 
 - [Third bullet point describing specific scene/event]
 - [Fourth bullet point describing specific scene/event]  
 - [Fifth bullet point describing specific scene/event]
 
-Chapter ${currentChapterIndex + 3}: [Chapter Title]
+Chapter ${currentChapterIndex + 2}: [Chapter Title]
 - [First bullet point describing specific scene/event]
 - [Second bullet point describing specific scene/event]
 - [Third bullet point describing specific scene/event] 
