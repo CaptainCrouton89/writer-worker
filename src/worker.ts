@@ -1,6 +1,7 @@
 import {
   generateCompleteFirstChapter,
   generateStoryOutline,
+  regenerateOutlineWithUserPrompt,
   StoryOutline,
   UserPreferences,
 } from "./lib/generation-service.js";
@@ -114,9 +115,49 @@ async function processGenerationJob(job: GenerationJob) {
     const chapterIndex = chapterMapping.chapter_index;
     console.log(`📖 Processing chapter ${chapterIndex + 1} for job ${job.id}`);
 
-    // Check if we need to resume or start fresh
+    // Check if we need to regenerate outline based on user prompt
     let outline: StoryOutline;
-    if (job.story_outline) {
+    if (job.user_prompt && job.story_outline) {
+      console.log(`🔄 Regenerating outline with user prompt for job ${job.id}`);
+      await updateJobProgress(job.id, "regenerating_outline", 5);
+
+      const existingOutline = job.story_outline as unknown as StoryOutline;
+      const regenerateResult = await regenerateOutlineWithUserPrompt(
+        existingOutline,
+        job.user_prompt,
+        preferences,
+        chapterIndex
+      );
+
+      if (!regenerateResult.success) {
+        throw new Error(regenerateResult.error);
+      }
+
+      outline = regenerateResult.data;
+      
+      await updateJobProgress(job.id, "saving_regenerated_outline", 15);
+
+      // Save the regenerated outline to the job and clear the user prompt
+      const { error: outlineError } = await supabase
+        .from("generation_jobs")
+        .update({
+          story_outline: outline as unknown as any,
+          user_prompt: null, // Clear the prompt after processing
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", job.id);
+
+      if (outlineError) {
+        console.error(
+          `❌ Failed to save regenerated outline for job ${job.id}:`,
+          outlineError
+        );
+        throw new Error(`Failed to save regenerated outline: ${outlineError.message}`);
+      } else {
+        console.log(`✅ Regenerated outline saved for job ${job.id}`);
+        await updateJobProgress(job.id, "regenerated_outline_saved", 20);
+      }
+    } else if (job.story_outline) {
       console.log(`📋 Resuming with existing outline for job ${job.id}`);
       outline = job.story_outline as unknown as StoryOutline;
       await updateJobProgress(job.id, "using_existing_outline", 20);

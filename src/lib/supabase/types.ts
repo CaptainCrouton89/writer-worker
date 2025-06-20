@@ -34,6 +34,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      chapter_hearts: {
+        Row: {
+          chapter_id: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_hearts_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapter_sequence_map: {
         Row: {
           chapter_id: string
@@ -188,6 +220,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           user_preferences: Json
+          user_prompt: string | null
         }
         Insert: {
           bullet_progress?: number | null
@@ -205,6 +238,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           user_preferences: Json
+          user_prompt?: string | null
         }
         Update: {
           bullet_progress?: number | null
@@ -222,6 +256,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           user_preferences?: Json
+          user_prompt?: string | null
         }
         Relationships: [
           {
@@ -305,6 +340,21 @@ export type Database = {
       generate_anonymous_username: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_hot_sequences: {
+        Args: { limit_count?: number; offset_count?: number }
+        Returns: {
+          sequence_id: string
+          sequence_name: string
+          sequence_description: string
+          chapter_count: number
+          total_hearts: number
+          top_author: string
+          author_count: number
+          all_authors: string[]
+          hot_score: number
+          most_recent_update: string
+        }[]
       }
       gtrgm_compress: {
         Args: { "": unknown }
