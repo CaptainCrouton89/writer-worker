@@ -849,21 +849,21 @@ export const regenerateOutlineWithUserPrompt = async (
   preferences: UserPreferences,
   currentChapterIndex: number
 ): Promise<Result<StoryOutline>> => {
-  console.log(`🔄 Regenerating outline with user prompt for chapters ${currentChapterIndex + 1} onwards`);
+  console.log(`🔄 Regenerating outline with user prompt starting from chapter ${currentChapterIndex + 1} (index ${currentChapterIndex})`);
   console.log(`📝 User prompt: ${userPrompt}`);
 
   const config = STORY_LENGTH_CONFIG[preferences.storyLength as keyof typeof STORY_LENGTH_CONFIG];
   const spiceLevel = SPICE_LEVELS[preferences.spiceLevel];
   const pageCount = STORY_LENGTH_PAGES[preferences.storyLength];
 
-  // Build context from completed chapters
-  const completedChapters = existingOutline.chapters.slice(0, currentChapterIndex + 1);
+  // Build context from completed chapters (excluding current chapter being worked on)
+  const completedChapters = existingOutline.chapters.slice(0, currentChapterIndex);
   const completedContext = completedChapters
     .map((ch, i) => `Chapter ${i + 1}: ${ch.name}\n${ch.bullets.map(b => `- ${b.text}`).join('\n')}`)
     .join('\n\n');
 
-  // Calculate remaining chapters
-  const remainingChapterCount = config.chapterCount - (currentChapterIndex + 1);
+  // Calculate remaining chapters (including current chapter being worked on)
+  const remainingChapterCount = config.chapterCount - currentChapterIndex;
   
   if (remainingChapterCount <= 0) {
     console.log('✅ No remaining chapters to regenerate');
@@ -900,7 +900,7 @@ ${userPrompt}
 Generate ${remainingChapterCount} new chapter names and plot points that continue from where the completed chapters left off, incorporating the user's new direction. For each chapter list ${config.bulletsPerChapter} bulleted plot points. The bullet points should include ${smutDescriptors[spiceLevel]} and require that those scenes focus on ${smutRequirements[spiceLevel]}.
 
 <requirements>
-- Create exactly ${remainingChapterCount} chapters (continuing from Chapter ${currentChapterIndex + 1})
+- Create exactly ${remainingChapterCount} chapters (starting from Chapter ${currentChapterIndex + 1})
 - Each chapter must have exactly ${config.bulletsPerChapter} bullet points
 - Include ${smutDescriptors[spiceLevel]}
 - Focus on ${smutRequirements[spiceLevel]}
