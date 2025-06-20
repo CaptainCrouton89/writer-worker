@@ -26,6 +26,8 @@ export interface StoryOutline {
   readonly title?: string;
   readonly description?: string;
   readonly tags?: readonly string[];
+  readonly trigger_warnings?: readonly string[];
+  readonly is_sexually_explicit?: boolean;
 }
 
 export type Result<T, E = string> =

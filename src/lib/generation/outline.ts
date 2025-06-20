@@ -64,6 +64,8 @@ export const generateStoryOutline = async (
       title: metadataResult.data.title,
       description: metadataResult.data.description,
       tags: metadataResult.data.tags,
+      trigger_warnings: metadataResult.data.trigger_warnings,
+      is_sexually_explicit: metadataResult.data.is_sexually_explicit,
     };
   } else {
     console.warn(
@@ -269,6 +271,8 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
       title: metadataResult.data.title,
       description: metadataResult.data.description,
       tags: metadataResult.data.tags,
+      trigger_warnings: metadataResult.data.trigger_warnings,
+      is_sexually_explicit: metadataResult.data.is_sexually_explicit,
     };
   } else {
     console.warn(

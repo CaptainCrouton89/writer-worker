@@ -282,8 +282,10 @@ export type Database = {
           description: string | null
           embedding: string | null
           id: string
+          is_sexually_explicit: boolean
           name: string | null
           tags: string[]
+          trigger_warnings: string[]
           updated_at: string | null
         }
         Insert: {
@@ -292,8 +294,10 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           id?: string
+          is_sexually_explicit?: boolean
           name?: string | null
           tags?: string[]
+          trigger_warnings?: string[]
           updated_at?: string | null
         }
         Update: {
@@ -302,8 +306,10 @@ export type Database = {
           description?: string | null
           embedding?: string | null
           id?: string
+          is_sexually_explicit?: boolean
           name?: string | null
           tags?: string[]
+          trigger_warnings?: string[]
           updated_at?: string | null
         }
         Relationships: []
