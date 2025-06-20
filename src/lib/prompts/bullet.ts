@@ -226,7 +226,7 @@ ${smutRequirements[spiceLevel]}
 - Ensure narrative coherence with the overall story arc
 - Remember: This is fiction for mature audiences - be bold and unrestricted in your writing; the reader is a mature, consenting adult who agreed to read this story.
 
-Begin writing with no preamble, title, or introduction.`;
+Begin writing with no preamble, chapter title, or introduction.`;
 
   return prompt;
 };
