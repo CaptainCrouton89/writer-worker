@@ -283,6 +283,7 @@ export type Database = {
           embedding: string | null
           id: string
           name: string | null
+          tags: string[]
           updated_at: string | null
         }
         Insert: {
@@ -292,6 +293,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           name?: string | null
+          tags?: string[]
           updated_at?: string | null
         }
         Update: {
@@ -301,6 +303,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           name?: string | null
+          tags?: string[]
           updated_at?: string | null
         }
         Relationships: []
@@ -309,6 +312,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          story_points: number
           theme: string | null
           updated_at: string | null
           user_id: string
@@ -317,6 +321,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          story_points?: number
           theme?: string | null
           updated_at?: string | null
           user_id: string
@@ -325,6 +330,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          story_points?: number
           theme?: string | null
           updated_at?: string | null
           user_id?: string
@@ -375,6 +381,10 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      increment_story_points: {
+        Args: { user_id: string; points_to_add: number }
+        Returns: number
       }
       search_chapters_hybrid: {
         Args: {

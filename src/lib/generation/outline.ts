@@ -63,6 +63,7 @@ export const generateStoryOutline = async (
       ...parseResult.data,
       title: metadataResult.data.title,
       description: metadataResult.data.description,
+      tags: metadataResult.data.tags,
     };
   } else {
     console.warn(
@@ -267,6 +268,7 @@ Chapter ${currentChapterIndex + 2}: [Chapter Title]
       ...finalOutline,
       title: metadataResult.data.title,
       description: metadataResult.data.description,
+      tags: metadataResult.data.tags,
     };
   } else {
     console.warn(
