@@ -1,0 +1,5 @@
+- After making changes to the database, push the migration and pull the new types.
+- All supabase stuff should be done on the remote db. Push changes there
+- **Database Migrations**: Always use `supabase migration new <name>` to create migrations, then `supabase db push` to apply to remote. For complex migrations, create multiple smaller migrations
+- **SQL Function Debugging**: When creating complex SQL functions with JOINs, be careful of ambiguous column references - fully qualify columns (e.g., `s.id`, `c.id as chapter_id`) to avoid PostgreSQL errors
+- `src/lib/supabase/types.ts` is a generated file. Do not edit it. If you need to add additional types, don't put them there

@@ -404,30 +404,49 @@ const callAI = async (
 export const generateCompleteFirstChapter = async (
   preferences: UserPreferences,
   chapterId?: string,
-  progressCallback?: (step: string, progress: number) => Promise<void>
+  progressCallback?: (step: string, progress: number) => Promise<void>,
+  existingOutline?: StoryOutline,
+  resumeFromPartialContent?: boolean,
+  jobId?: string
 ): Promise<Result<string>> => {
   console.log("🚀 Starting story generation");
   console.log("📝 User preferences:", buildUserContext(preferences));
 
-  const outlinePrompt = buildOutlinePrompt(preferences);
-  console.log("\n🔮 Requesting story outline from AI...");
+  let outline: StoryOutline;
+  
+  // Use existing outline if provided, otherwise generate new one
+  if (existingOutline) {
+    console.log("📋 Using existing outline");
+    outline = existingOutline;
+    if (progressCallback) {
+      await progressCallback("using_existing_outline", 20);
+    }
+  } else {
+    const outlinePrompt = buildOutlinePrompt(preferences);
+    console.log("\n🔮 Requesting story outline from AI...");
 
-  const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
-  const outlineResult = await callAI(outlinePrompt, temperature);
-  if (!outlineResult.success) {
-    console.error("❌ Outline generation failed:", outlineResult.error);
-    return outlineResult;
+    const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
+    const outlineResult = await callAI(outlinePrompt, temperature);
+    if (!outlineResult.success) {
+      console.error("❌ Outline generation failed:", outlineResult.error);
+      return outlineResult;
+    }
+    console.log("✅ Outline generated successfully");
+
+    if (progressCallback) {
+      await progressCallback("outline_generated", 20);
+    }
+
+    const parseResult = parseOutlineResponse(outlineResult.data);
+    if (!parseResult.success) {
+      console.error("❌ Outline parsing failed:", parseResult.error);
+      return parseResult;
+    }
+    console.log(`📋 Parsed ${parseResult.data.chapters.length} chapters`);
+    outline = parseResult.data;
   }
-  console.log("✅ Outline generated successfully");
 
-  const parseResult = parseOutlineResponse(outlineResult.data);
-  if (!parseResult.success) {
-    console.error("❌ Outline parsing failed:", parseResult.error);
-    return parseResult;
-  }
-  console.log(`📋 Parsed ${parseResult.data.chapters.length} chapters`);
-
-  const chapterResult = extractFirstChapter(parseResult.data);
+  const chapterResult = extractFirstChapter(outline);
   if (!chapterResult.success) {
     console.error("❌ Chapter extraction failed:", chapterResult.error);
     return chapterResult;
@@ -436,13 +455,69 @@ export const generateCompleteFirstChapter = async (
     `📖 First chapter: "${chapterResult.data.name}" (${chapterResult.data.bullets.length} plot points)`
   );
 
-  // Generate content for all bullets sequentially
-  console.log("\n✍️ Generating complete chapter content...");
-  let fullChapterContent = "";
-  let previousBulletContent = "";
-  let allPreviousContent = "";
+  if (progressCallback) {
+    await progressCallback("starting_content_generation", 30);
+  }
 
-  for (let i = 0; i < chapterResult.data.bullets.length; i++) {
+  // Check if we're resuming from partial content
+  let fullChapterContent = "";
+  let startFromBulletIndex = 0;
+  
+  if (resumeFromPartialContent && chapterId && jobId) {
+    console.log(`🔄 Checking for existing content and bullet progress to resume from...`);
+    
+    // Get existing chapter content
+    const { data: existingChapter, error: chapterError } = await supabase
+      .from("chapters")
+      .select("content")
+      .eq("id", chapterId)
+      .single();
+      
+    if (chapterError) {
+      console.error(`❌ Failed to fetch existing chapter content:`, chapterError);
+    } else if (existingChapter?.content) {
+      fullChapterContent = existingChapter.content;
+    }
+    
+    // Get bullet progress from the job
+    const { data: jobData, error: jobError } = await supabase
+      .from("generation_jobs")
+      .select("bullet_progress")
+      .eq("id", jobId)
+      .single();
+      
+    if (jobError) {
+      console.error(`❌ Failed to fetch job bullet progress:`, jobError);
+    } else if (jobData?.bullet_progress !== undefined && jobData.bullet_progress !== null) {
+      // Resume from the next bullet after the last completed one
+      startFromBulletIndex = Math.min(jobData.bullet_progress + 1, chapterResult.data.bullets.length - 1);
+      console.log(`📄 Found existing content (${fullChapterContent.length} chars) and bullet progress (${jobData.bullet_progress}), resuming from bullet ${startFromBulletIndex + 1}`);
+    } else if (fullChapterContent.length > 0) {
+      // Fallback to content-based estimation if no bullet progress is saved
+      const averageBulletLength = 500;
+      const estimatedBulletsCompleted = Math.floor(fullChapterContent.length / averageBulletLength);
+      startFromBulletIndex = Math.min(estimatedBulletsCompleted, chapterResult.data.bullets.length - 1);
+      console.log(`📄 Found existing content (${fullChapterContent.length} chars), estimating resume from bullet ${startFromBulletIndex + 1}`);
+    }
+    
+    // Skip if we're already at or past the end
+    if (startFromBulletIndex >= chapterResult.data.bullets.length) {
+      console.log(`✅ Chapter already complete (${chapterResult.data.bullets.length} bullets), returning existing content`);
+      return {
+        success: true,
+        data: fullChapterContent,
+      };
+    }
+  }
+
+  // Generate content for remaining bullets sequentially
+  console.log("\n✍️ Generating chapter content...");
+  let previousBulletContent = "";
+  let allPreviousContent = fullChapterContent;
+
+  const temperature = TEMPERATURE_BY_SPICE[preferences.spiceLevel];
+
+  for (let i = startFromBulletIndex; i < chapterResult.data.bullets.length; i++) {
     const bullet = chapterResult.data.bullets[i];
     const nextBullet =
       i < chapterResult.data.bullets.length - 1
@@ -473,7 +548,10 @@ export const generateCompleteFirstChapter = async (
     }
 
     const bulletContent = bulletResult.data;
-    fullChapterContent += (i > 0 ? "\n\n" : "") + bulletContent;
+    
+    // Only add separator if we have existing content and this isn't the first new bullet
+    const needsSeparator = fullChapterContent.length > 0 && (i > startFromBulletIndex || startFromBulletIndex > 0);
+    fullChapterContent += (needsSeparator ? "\n\n" : "") + bulletContent;
     previousBulletContent = bulletContent;
     allPreviousContent = fullChapterContent;
 
@@ -496,6 +574,24 @@ export const generateCompleteFirstChapter = async (
         console.error(`❌ Failed to update chapter ${chapterId} content:`, updateError);
       } else {
         console.log(`✅ Chapter ${chapterId} content updated (${fullChapterContent.length} total characters)`);
+      }
+    }
+
+    // Update bullet progress in job if jobId provided
+    if (jobId) {
+      console.log(`🔄 Updating job ${jobId} bullet progress to ${i}...`);
+      const { error: progressError } = await supabase
+        .from("generation_jobs")
+        .update({
+          bullet_progress: i,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", jobId);
+
+      if (progressError) {
+        console.error(`❌ Failed to update job ${jobId} bullet progress:`, progressError);
+      } else {
+        console.log(`✅ Job ${jobId} bullet progress updated to ${i}`);
       }
     }
 

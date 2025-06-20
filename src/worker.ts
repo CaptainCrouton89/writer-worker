@@ -1,6 +1,11 @@
+import {
+  generateCompleteFirstChapter,
+  generateStoryOutline,
+  StoryOutline,
+  UserPreferences,
+} from "./lib/generation-service.js";
 import { supabase } from "./lib/supabase.js";
 import { GenerationJob, WorkerConfig } from "./lib/types.js";
-import { generateCompleteFirstChapter, UserPreferences } from "./lib/generation-service.js";
 
 const config: WorkerConfig = {
   pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || "5000"),
@@ -92,17 +97,63 @@ async function processGenerationJob(job: GenerationJob) {
     }
 
     // Parse user preferences from the job
-    const preferences = job.user_preferences as UserPreferences;
-    
+    const preferences = job.user_preferences as unknown as UserPreferences;
+
+    // Check if we need to resume or start fresh
+    let outline: StoryOutline;
+    if (job.story_outline) {
+      console.log(`📋 Resuming with existing outline for job ${job.id}`);
+      outline = job.story_outline as unknown as StoryOutline;
+      await updateJobProgress(job.id, "using_existing_outline", 20);
+    } else {
+      console.log(`🔮 Generating new outline for job ${job.id}`);
+      await updateJobProgress(job.id, "generating_outline", 5);
+
+      const outlineResult = await generateStoryOutline(preferences);
+      if (!outlineResult.success) {
+        throw new Error(outlineResult.error);
+      }
+
+      outline = outlineResult.data;
+      
+      await updateJobProgress(job.id, "saving_outline", 15);
+
+      // Save the outline to the job
+      const { error: outlineError } = await supabase
+        .from("generation_jobs")
+        .update({
+          story_outline: outline as unknown as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", job.id);
+
+      if (outlineError) {
+        console.error(
+          `❌ Failed to save outline for job ${job.id}:`,
+          outlineError
+        );
+        throw new Error(`Failed to save outline: ${outlineError.message}`);
+      } else {
+        console.log(`✅ Outline saved for job ${job.id}`);
+        await updateJobProgress(job.id, "outline_saved", 20);
+      }
+    }
+
     // Generate the complete first chapter with streaming updates
     await updateJobProgress(job.id, "generating_content", 10);
-    
+
+    // Check if this is a resume job
+    const isResumeJob = job.current_step === "resuming";
+
     const generationResult = await generateCompleteFirstChapter(
-      preferences, 
+      preferences,
       job.chapter_id,
       async (step: string, progress: number) => {
         await updateJobProgress(job.id, step, progress);
-      }
+      },
+      outline, // Pass the outline we already have
+      isResumeJob, // Enable resume functionality if this is a resume job
+      job.id // Pass job ID for bullet progress tracking
     );
     if (!generationResult.success) {
       throw new Error(generationResult.error);
@@ -138,11 +189,16 @@ async function processGenerationJob(job: GenerationJob) {
       .eq("id", job.chapter_id);
 
     if (chapterStatusError) {
-      console.error(`❌ Failed to update chapter status for job ${job.id}:`, chapterStatusError);
+      console.error(
+        `❌ Failed to update chapter status for job ${job.id}:`,
+        chapterStatusError
+      );
       return;
     }
 
-    console.log(`✅ Successfully completed job ${job.id} and updated chapter ${job.chapter_id}`);
+    console.log(
+      `✅ Successfully completed job ${job.id} and updated chapter ${job.chapter_id}`
+    );
   } catch (error) {
     console.error(`❌ Error processing job ${job.id}:`, error);
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -150,7 +206,11 @@ async function processGenerationJob(job: GenerationJob) {
   }
 }
 
-async function updateJobProgress(jobId: string, step: string, progress: number) {
+async function updateJobProgress(
+  jobId: string,
+  step: string,
+  progress: number
+) {
   try {
     const { error } = await supabase
       .from("generation_jobs")
@@ -181,13 +241,17 @@ async function handleJobError(jobId: string, errorMessage: string) {
       .single();
 
     if (fetchError) {
-      console.error(`❌ Failed to fetch job for error handling ${jobId}:`, fetchError);
+      console.error(
+        `❌ Failed to fetch job for error handling ${jobId}:`,
+        fetchError
+      );
       return;
     }
 
     // Parse retry count from error message (simple implementation)
-    const currentRetries = job.error_message?.includes("Retry") ? 
-      parseInt(job.error_message.match(/Retry (\d+)/)?.[1] || "0") : 0;
+    const currentRetries = job.error_message?.includes("Retry")
+      ? parseInt(job.error_message.match(/Retry (\d+)/)?.[1] || "0")
+      : 0;
 
     if (currentRetries < config.maxRetries) {
       // Reset to pending for retry
@@ -195,7 +259,9 @@ async function handleJobError(jobId: string, errorMessage: string) {
         .from("generation_jobs")
         .update({
           status: "pending",
-          error_message: `Retry ${currentRetries + 1}/${config.maxRetries}: ${errorMessage}`,
+          error_message: `Retry ${currentRetries + 1}/${
+            config.maxRetries
+          }: ${errorMessage}`,
           updated_at: new Date().toISOString(),
         })
         .eq("id", jobId);
@@ -203,7 +269,11 @@ async function handleJobError(jobId: string, errorMessage: string) {
       if (retryError) {
         console.error(`❌ Failed to retry job ${jobId}:`, retryError);
       } else {
-        console.log(`🔄 Retrying job ${jobId} (attempt ${currentRetries + 1}/${config.maxRetries})`);
+        console.log(
+          `🔄 Retrying job ${jobId} (attempt ${currentRetries + 1}/${
+            config.maxRetries
+          })`
+        );
       }
     } else {
       // Mark job as failed after max retries
@@ -231,10 +301,15 @@ async function handleJobError(jobId: string, errorMessage: string) {
         .eq("id", job.chapter_id);
 
       if (chapterStatusError) {
-        console.error(`❌ Failed to update chapter status to failed for job ${jobId}:`, chapterStatusError);
+        console.error(
+          `❌ Failed to update chapter status to failed for job ${jobId}:`,
+          chapterStatusError
+        );
       }
 
-      console.log(`💀 Job ${jobId} failed after ${config.maxRetries} retries, chapter ${job.chapter_id} marked as failed`);
+      console.log(
+        `💀 Job ${jobId} failed after ${config.maxRetries} retries, chapter ${job.chapter_id} marked as failed`
+      );
     }
   } catch (error) {
     console.error(`❌ Error in handleJobError for job ${jobId}:`, error);
@@ -244,15 +319,18 @@ async function handleJobError(jobId: string, errorMessage: string) {
 async function cleanupOrphanedChapters() {
   try {
     console.log("🔍 Checking for orphaned chapters...");
-    
-    // Find chapters that are stuck in 'generating' status but have no active jobs
+
+    // Find chapters that are stuck in 'generating' status
     const { data: orphanedChapters, error: queryError } = await supabase
       .from("chapters")
-      .select(`
+      .select(
+        `
         id,
         generation_status,
-        generation_progress
-      `)
+        generation_progress,
+        content
+      `
+      )
       .eq("generation_status", "generating");
 
     if (queryError) {
@@ -265,21 +343,133 @@ async function cleanupOrphanedChapters() {
       return;
     }
 
+    console.log(`🔍 Found ${orphanedChapters.length} chapters in 'generating' status`);
+
     for (const chapter of orphanedChapters) {
+      console.log(`🔍 Checking chapter ${chapter.id} (progress: ${chapter.generation_progress}%)...`);
+      
       // Check if there are any active jobs for this chapter
       const { data: activeJobs, error: jobQueryError } = await supabase
         .from("generation_jobs")
-        .select("id, status")
+        .select("id, status, story_outline, user_preferences, bullet_progress, current_step")
         .eq("chapter_id", chapter.id)
         .in("status", ["pending", "processing"]);
 
       if (jobQueryError) {
-        console.error(`❌ Error checking jobs for chapter ${chapter.id}:`, jobQueryError);
+        console.error(
+          `❌ Error checking jobs for chapter ${chapter.id}:`,
+          jobQueryError
+        );
         continue;
       }
 
-      // If no active jobs, mark chapter as failed
-      if (!activeJobs || activeJobs.length === 0) {
+      if (activeJobs && activeJobs.length > 0) {
+        console.log(`⏳ Chapter ${chapter.id} has ${activeJobs.length} active job(s), checking if stuck...`);
+        
+        // Check if jobs are stuck in processing (likely from worker restart)
+        const stuckJobs = activeJobs.filter(job => job.status === "processing");
+        
+        if (stuckJobs.length > 0) {
+          console.log(`🔄 Found ${stuckJobs.length} stuck job(s) for chapter ${chapter.id}, resetting to pending...`);
+          
+          // Reset stuck jobs to pending so they can be picked up again
+          for (const stuckJob of stuckJobs) {
+            const { error: resetError } = await supabase
+              .from("generation_jobs")
+              .update({
+                status: "pending",
+                current_step: stuckJob.story_outline ? "resuming" : "initializing",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", stuckJob.id);
+
+            if (resetError) {
+              console.error(`❌ Failed to reset stuck job ${stuckJob.id}:`, resetError);
+            } else {
+              console.log(`✅ Reset stuck job ${stuckJob.id} to pending`);
+            }
+          }
+        }
+        continue; // Skip to next chapter since this one has jobs
+      }
+
+      // No active jobs found - look for any incomplete jobs to resume
+      console.log(`🔍 No active jobs for chapter ${chapter.id}, looking for resumable jobs...`);
+      
+      const { data: allJobs, error: allJobsError } = await supabase
+        .from("generation_jobs")
+        .select("id, status, story_outline, user_preferences, bullet_progress, current_step")
+        .eq("chapter_id", chapter.id)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+
+      if (allJobsError) {
+        console.error(
+          `❌ Error checking all jobs for chapter ${chapter.id}:`,
+          allJobsError
+        );
+        continue;
+      }
+
+      if (allJobs && allJobs.length > 0) {
+        const lastJob = allJobs[0];
+        console.log(`🔍 Found last job ${lastJob.id} with status '${lastJob.status}' for chapter ${chapter.id}`);
+
+        // Get the sequence and user info from the chapter
+        const { data: chapterWithSequence, error: chapterFetchError } = await supabase
+          .from("chapter_sequence_map")
+          .select(
+            `
+            sequence_id,
+            sequences!inner (
+              created_by
+            )
+          `
+          )
+          .eq("chapter_id", chapter.id)
+          .single();
+
+        if (chapterFetchError) {
+          console.error(
+            `❌ Failed to fetch chapter sequence info for ${chapter.id}:`,
+            chapterFetchError
+          );
+          continue;
+        }
+
+        // Create a resume job based on the last job's progress
+        const shouldResume = lastJob.story_outline || (chapter.content && chapter.content.trim().length > 0);
+        
+        const { error: resumeJobError } = await supabase
+          .from("generation_jobs")
+          .insert({
+            sequence_id: chapterWithSequence.sequence_id,
+            chapter_id: chapter.id,
+            user_id: (chapterWithSequence.sequences as any).created_by,
+            user_preferences: lastJob.user_preferences,
+            story_outline: lastJob.story_outline,
+            bullet_progress: lastJob.bullet_progress || 0,
+            status: "pending",
+            progress: 0,
+            current_step: shouldResume ? "resuming" : "initializing",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (resumeJobError) {
+          console.error(
+            `❌ Failed to create resume job for chapter ${chapter.id}:`,
+            resumeJobError
+          );
+        } else {
+          console.log(
+            `🔄 Created ${shouldResume ? 'resume' : 'new'} job for chapter ${chapter.id}${lastJob.story_outline ? ' with existing outline' : ''}${lastJob.bullet_progress ? ` from bullet ${lastJob.bullet_progress}` : ''}`
+          );
+        }
+      } else {
+        // No jobs found at all, mark chapter as failed
+        console.log(`❌ No jobs found for chapter ${chapter.id}, marking as failed`);
+        
         const { error: updateError } = await supabase
           .from("chapters")
           .update({
@@ -289,9 +479,14 @@ async function cleanupOrphanedChapters() {
           .eq("id", chapter.id);
 
         if (updateError) {
-          console.error(`❌ Failed to cleanup orphaned chapter ${chapter.id}:`, updateError);
+          console.error(
+            `❌ Failed to cleanup orphaned chapter ${chapter.id}:`,
+            updateError
+          );
         } else {
-          console.log(`🧹 Cleaned up orphaned chapter ${chapter.id} (no active jobs found)`);
+          console.log(
+            `🧹 Marked orphaned chapter ${chapter.id} as failed (no jobs found)`
+          );
         }
       }
     }
