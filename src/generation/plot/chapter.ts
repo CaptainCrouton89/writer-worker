@@ -61,16 +61,54 @@ export const generateChapter = async (
       .eq("id", job.id);
 
     // Update chapter content in database incrementally
-    await supabase
-      .from("chapters")
-      .update({
-        content: chapterContent,
-        generation_progress: plotPointProgress,
-        generation_status:
-          plotPointProgress === 100 ? "completed" : "in_progress",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", job.chapter_id);
+    try {
+      console.log(
+        `💾 Updating chapter ${job.chapter_id} with ${chapterContent.length} characters, progress: ${plotPointProgress}%, status: ${
+          plotPointProgress === 100 ? "completed" : "generating"
+        }`
+      );
+
+      const { data, error, count } = await supabase
+        .from("chapters")
+        .update({
+          content: chapterContent,
+          generation_progress: plotPointProgress,
+          generation_status:
+            plotPointProgress === 100 ? "completed" : "generating",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", job.chapter_id)
+        .select();
+
+      if (error) {
+        console.error(
+          `❌ Database error updating chapter ${job.chapter_id}:`,
+          error
+        );
+        throw new Error(
+          `Failed to update chapter content: ${error.message}`
+        );
+      }
+
+      if (!data || data.length === 0) {
+        console.error(
+          `❌ No rows updated for chapter ${job.chapter_id}! Chapter may not exist or conditions not met.`
+        );
+        throw new Error(
+          `Chapter update failed: no rows updated for chapter ${job.chapter_id}`
+        );
+      }
+
+      console.log(
+        `✅ Successfully updated chapter ${job.chapter_id}, ${data.length} row(s) affected`
+      );
+    } catch (updateError) {
+      console.error(
+        `❌ Critical error updating chapter ${job.chapter_id}:`,
+        updateError
+      );
+      throw updateError;
+    }
 
     console.log(
       `✅ Completed plot point ${

@@ -191,7 +191,6 @@ export const generatePlotPoint = async (
       temperature: 0.8,
       topP: 0.9,
       topK: 50,
-      frequencyPenalty: 0.2,
     });
     console.log(`✅ Successfully generated plot point ${plotPointIndex + 1}`);
     return text.replace(/^Of course, here it is:/, "");
