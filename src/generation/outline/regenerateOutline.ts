@@ -40,9 +40,12 @@ ${storyOutline}
 - The outline is for a ${
   STORY_LENGTH_CONFIG[promptData.story_length].type
 } story.
-- There should be a total of ${
+- The story has a total of ${
   STORY_LENGTH_CONFIG[promptData.story_length].chapterCount
 } chapters
+- You are ONLY generating chapters starting from Chapter ${
+  promptData.insertion_chapter_index + 1
+} onward
 - Each chapter should have exactly ${
   STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter
 } plot points
@@ -52,6 +55,7 @@ ${storyOutline}
   STORY_LENGTH_CONFIG[promptData.story_length].wordTarget
 }
 - Use good pacing, and follow typical story structure.
+- IMPORTANT: Only generate the chapters requested, do not regenerate earlier chapters
 </outline_structure>
 
 <bullet_point_style>
@@ -64,37 +68,46 @@ Write concise bullet points that are 1-2 sentences long. Each should:
 <output_format>
 Begin your response with: "Of course! Here it is:"
 
-Then follow this exact structure:
+Then generate ONLY the chapters from Chapter ${
+  promptData.insertion_chapter_index + 1
+} onward, following this exact structure:
 
 Chapter [number]: Chapter Title
-- First plot point
-- Second plot point
-- Third plot point
-- Fourth plot point
-- Fifth plot point
+${Array(STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter)
+  .fill(null)
+  .map((_, i) => `- Plot point ${i + 1}`)
+  .join("\n")}
 
 Chapter [number]: Chapter Title
-- First plot point
-- Second plot point
-- Third plot point
-- Fourth plot point
-- Fifth plot point
+${Array(STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter)
+  .fill(null)
+  .map((_, i) => `- Plot point ${i + 1}`)
+  .join("\n")}
 
-[Continue same format for all chapters...]
+[Continue same format ONLY for the remaining chapters from Chapter ${
+  promptData.insertion_chapter_index + 1
+} to Chapter ${STORY_LENGTH_CONFIG[promptData.story_length].chapterCount}]
 </output_format>
 `;
 
-const getPrompt = (storyOutlineBefore: string, userPrompt: string) => {
+const getPrompt = (
+  storyOutlineBefore: string,
+  userPrompt: string,
+  remainingChapterCount: number,
+  startingChapterNumber: number
+) => {
   return `Here's what was outlined up until this point:
 <old_outline>
 ${storyOutlineBefore}
 </old_outline>
 
-But *now*, the story should be adjusted like this:
+But *now*, from Chapter ${startingChapterNumber} onward, the story should be adjusted like this:
 
 ${userPrompt}
 
-Write the new outline, continuing where the old outline left off.
+Write ONLY the remaining ${remainingChapterCount} chapters (Chapter ${startingChapterNumber} through Chapter ${
+    startingChapterNumber + remainingChapterCount - 1
+  }), continuing from where the old outline left off.
   `;
 };
 
@@ -103,7 +116,19 @@ export const regenerateOutline = async (
   promptData: UserPrompt,
   existingChapters: Chapter[]
 ): Promise<Chapter[]> => {
-  const outlineString = existingChapters
+  // Get the insertion index from the prompt data
+  const insertionIndex = promptData.insertion_chapter_index;
+
+  // Get total chapter count for this story length
+  const totalChapterCount =
+    STORY_LENGTH_CONFIG[promptData.story_length].chapterCount;
+
+  // Calculate how many chapters to keep and how many to regenerate
+  const chaptersToKeep = existingChapters.slice(0, insertionIndex);
+  const remainingChapterCount = totalChapterCount - insertionIndex;
+
+  // Create outline string only for chapters up to insertion point
+  const outlineStringBefore = chaptersToKeep
     .map(
       (chapter, index) =>
         `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
@@ -112,14 +137,37 @@ export const regenerateOutline = async (
     )
     .join("\n");
 
-  const system = systemPrompt(promptData, outlineString);
-  console.log(system);
+  // Use full outline for system prompt context
+  const fullOutlineString = existingChapters
+    .map(
+      (chapter, index) =>
+        `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
+          .map((point) => `- ${point}`)
+          .join("\n")}`
+    )
+    .join("\n");
 
-  const prompt = getPrompt(outlineString, userPrompt);
+  const system = systemPrompt(promptData, fullOutlineString);
+  console.log(
+    `📝 Regenerating from chapter ${
+      insertionIndex + 1
+    }, keeping first ${insertionIndex} chapters`
+  );
+
+  const prompt = getPrompt(
+    outlineStringBefore,
+    userPrompt,
+    remainingChapterCount,
+    insertionIndex + 1
+  );
   console.log(prompt);
 
   try {
-    console.log("🔄 Regenerating story outline with Gemini");
+    console.log(
+      `🔄 Regenerating ${remainingChapterCount} chapters starting from chapter ${
+        insertionIndex + 1
+      }`
+    );
     const { object } = await generateObject({
       model: google("gemini-2.5-pro"),
       system,
@@ -127,8 +175,21 @@ export const regenerateOutline = async (
       schema: StoryOutlineSchema,
       temperature: 0.4,
     });
-    console.log("✅ Successfully regenerated outline");
-    return object.chapters;
+    console.log(
+      `✅ Successfully regenerated ${object.chapters.length} chapters`
+    );
+
+    // Combine the kept chapters with the newly generated ones
+    const finalChapters = [...chaptersToKeep, ...object.chapters];
+
+    // Validate we have the correct total number of chapters
+    if (finalChapters.length !== totalChapterCount) {
+      throw new Error(
+        `Chapter count mismatch: expected ${totalChapterCount}, got ${finalChapters.length}`
+      );
+    }
+
+    return finalChapters;
   } catch (error) {
     console.error("❌ Failed to regenerate outline:", error);
     throw new Error(
