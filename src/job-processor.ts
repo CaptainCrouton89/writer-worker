@@ -14,7 +14,7 @@ import {
 } from "./lib/actions/chapter.js";
 import { generateEmbedding } from "./lib/embedding.js";
 import { supabase } from "./lib/supabase.js";
-import { Json } from "./lib/supabase/types.js";
+import { Json, Tables } from "./lib/supabase/types.js";
 import { GenerationJob } from "./lib/types.js";
 import { StoryOutline } from "./lib/types/generation.js";
 import { parseOutlineResponse } from "./lib/utils/outline.js";
@@ -171,16 +171,29 @@ export class JobProcessor {
   }
 
   private shouldGenerateMetadata(job: GenerationJob): boolean {
-    // Return true if outline was just created or regenerated
-    // This happens when there was no outline OR there was a user prompt
-    return !job.story_outline || !!job.user_prompt;
+    // Generate metadata if outline was just created (no existing outline)
+    // OR if outline was regenerated (user prompt provided)
+    const hadNoOutline =
+      !job.story_outline ||
+      !job.story_outline.chapters ||
+      job.story_outline.chapters.length === 0;
+    const hasUserPrompt = !!job.user_prompt;
+
+    console.log(
+      `🤔 Should generate metadata? hadNoOutline: ${hadNoOutline}, hasUserPrompt: ${hasUserPrompt}`
+    );
+
+    return hadNoOutline || hasUserPrompt;
   }
 
   private async generateStoryMetadata(
     job: GenerationJob,
     outline: StoryOutline
   ): Promise<void> {
+    console.log(`🏷️ Generating metadata for sequence ${job.sequence_id}`);
+
     const metadata = await generateSequenceMetadata(JSON.stringify(outline));
+    console.log(`✅ Generated metadata:`, metadata);
 
     const { error } = await supabase
       .from("sequences")
@@ -199,6 +212,10 @@ export class JobProcessor {
         `Failed to update sequence metadata for ${job.sequence_id}: ${error.message}`
       );
     }
+
+    console.log(
+      `✅ Successfully saved metadata for sequence ${job.sequence_id}`
+    );
   }
 
   private async generateEmbedding(
@@ -227,16 +244,22 @@ export class JobProcessor {
 
   private async generateChapterContent(
     job: GenerationJob,
-    chapter: any,
+    chapter: Tables<"chapters">,
     chapterIndex: number,
     outline: StoryOutline
   ): Promise<void> {
     console.log(`✍️ Generating content for chapter ${chapterIndex + 1}`);
 
     // Get previous chapter content for context
-    const previousChapterContent = chapter.parentId
-      ? await getChapterContent(chapter.parentId)
+    const previousChapterContent = chapter.parent_id
+      ? await getChapterContent(chapter.parent_id)
       : "";
+
+    if (previousChapterContent.length === 0 && chapterIndex > 0) {
+      throw new Error(
+        `Failed to fetch parent chapter content with id ${chapter.parent_id}`
+      );
+    }
 
     // Generate the chapter content using the plot point generator
     const chapterContent = await generateChapter(
@@ -274,6 +297,7 @@ export class JobProcessor {
 
   private async handleJobError(jobId: string, error: Error): Promise<void> {
     console.error(`❌ Job ${jobId} failed:`, error.message);
+    console.error("Error details:", error.stack || error);
 
     const { error: updateError } = await supabase
       .from("generation_jobs")
@@ -284,6 +308,7 @@ export class JobProcessor {
       .eq("id", jobId);
 
     if (updateError) {
+      console.error(`Failed to update failed job status for ${jobId}:`, updateError);
       throw new Error(`Failed to update job ${jobId}: ${updateError.message}`);
     }
   }

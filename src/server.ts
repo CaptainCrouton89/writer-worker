@@ -139,7 +139,8 @@ app.use((req: express.Request, res: express.Response) => {
 
 export function startServer() {
   const server = app.listen(PORT, () => {
-    console.log(`🌐 Health server running on port ${PORT}`);
+    console.log("🌐 Starting health check server");
+    console.log(`📡 Server listening on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
     console.log(`📈 Metrics: http://localhost:${PORT}/metrics`);
   });

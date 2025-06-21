@@ -61,12 +61,18 @@ Only include warnings that are actually relevant to the story content.
 - TRUE: Contains graphic sexual descriptions, detailed intimate acts, explicit language about body parts/sexual acts
 - FALSE: Contains only romantic tension, kissing, fade-to-black scenes, or mild sensual content`;
 
-  const { object } = await generateObject({
-    model: google("gemini-2.5-pro"),
-    prompt,
-    schema: SequenceMetadataSchema,
-    temperature: 0.2,
-  });
-
-  return object;
+  try {
+    console.log("🏷️ Generating sequence metadata with Gemini");
+    const { object } = await generateObject({
+      model: google("gemini-2.5-pro"),
+      prompt,
+      schema: SequenceMetadataSchema,
+      temperature: 0.2,
+    });
+    console.log("✅ Successfully generated metadata");
+    return object;
+  } catch (error) {
+    console.error("❌ Failed to generate metadata:", error);
+    throw new Error(`Metadata generation failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 };

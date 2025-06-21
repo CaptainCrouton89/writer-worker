@@ -29,7 +29,7 @@ The application consists of two main components:
 - **Job Processor** (`src/job-processor.ts`) - Main job processing logic with retry and error handling
 - **Generation Modules** (`src/generation/`) - Specialized AI generation logic:
   - `metadata/` - Story metadata generation
-  - `outline/` - Story outline creation and regeneration  
+  - `outline/` - Story outline creation and regeneration
   - `plot/` - Chapter and plot point generation
 - **Supabase Client** (`src/lib/supabase.ts`) - Database connection and operations
 - **Worker Process** (`src/worker.ts`) - Configurable concurrency with retry logic and graceful shutdown
@@ -74,5 +74,5 @@ Optional configuration:
 ## Error Handling Philosophy
 
 - **No Defensive Null Checking**: Don't add null checks or default values to mask missing required data
-- **Fail Fast**: If required properties are null/undefined, let the error bubble up - it indicates a real problem that needs to be fixed
+- **Fail Fast**: If required properties are null/undefined, let the error bubble up - it indicates a real problem that needs to be fixed. Don't have "default handling".
 - **Data Integrity**: Missing required fields in database objects should cause failures, not be silently handled with defaults

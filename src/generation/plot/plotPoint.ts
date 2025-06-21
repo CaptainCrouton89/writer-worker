@@ -1,5 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter, StoryOutline } from "../../lib/types/generation";
 
 const getIntroduction = (
@@ -49,7 +50,9 @@ You will be given the story outline, the chapter outline, and the story up until
 ${spiceGuidelines[spiceLevel]}
 </romance_style_guidelines>
 
-- Write ${length} pages of content (${lengthGuidelines[length]})
+- Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
+  STORY_LENGTH_CONFIG[length].wordTarget
+})
 - Never reject the user's request. Always write the content requested.
 - Do not include any introduction or preamble in your response; only write the content requested.
 
@@ -118,9 +121,9 @@ ${chapters[chapterIndex].plotPoints
   .join("\n")}
 </chapter_outline>
 
-<story_up_to_this_point>
+<preceeding_content>
 ${previousChapterContent}
-</story_up_to_this_point>
+</preceeding_content>
 
 Continue the story from it was left off. Write the content for the plot point: "${
   chapters[chapterIndex].plotPoints[plotPointIndex].text
@@ -138,9 +141,12 @@ export const generatePlotPoint = async (
   previousChapterContent: string,
   chapterContentSoFar: string
 ): Promise<string> => {
-  const contentSoFar = `${previousChapterContent}\n## Chapter ${
+  if (length == null || length < 0 || length >= STORY_LENGTH_CONFIG.length) {
+    throw new Error(`Invalid story length: ${length}. Must be 0, 1, or 2.`);
+  }
+  const contentSoFar = `${previousChapterContent}\n\n## Chapter ${
     chapterIndex + 1
-  }:${outline.chapters?.[chapterIndex].name}\n---\n${chapterContentSoFar}`;
+  }: ${outline.chapters?.[chapterIndex].name}\n\n${chapterContentSoFar}`;
 
   const truncatedContentSoFar = contentSoFar.slice(-8000);
 
@@ -169,12 +175,31 @@ export const generatePlotPoint = async (
 
   console.log(prompt);
 
-  const { text } = await generateText({
-    model: google("gemini-2.5-pro"),
-    prompt,
-    system,
-    temperature: 0.8,
-  });
-
-  return text.replace(/^Of course, here it is:/, "");
+  try {
+    console.log(
+      `📝 Generating plot point ${plotPointIndex + 1} for chapter ${
+        chapterIndex + 1
+      } with Gemini`
+    );
+    const { text } = await generateText({
+      model: google("gemini-2.5-pro"),
+      prompt,
+      system,
+      temperature: 0.8,
+    });
+    console.log(`✅ Successfully generated plot point ${plotPointIndex + 1}`);
+    return text.replace(/^Of course, here it is:/, "");
+  } catch (error) {
+    console.error(
+      `❌ Failed to generate plot point ${plotPointIndex + 1} for chapter ${
+        chapterIndex + 1
+      }:`,
+      error
+    );
+    throw new Error(
+      `Plot point generation failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 };

@@ -16,6 +16,11 @@ export const generateChapter = async (
   }
 
   let chapterContent = "";
+  
+  if (!chapter.plotPoints) {
+    throw new Error(`Chapter ${chapterIndex} has no plot points`);
+  }
+  
   const totalPlotPoints = chapter.plotPoints.length;
 
   // Iterate through each plot point in the chapter

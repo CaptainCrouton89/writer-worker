@@ -37,12 +37,19 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   });
 
   if (!response.ok) {
-    console.error("OpenAI API error:", response.status, response.statusText);
+    const errorText = await response.text();
+    console.error("❌ OpenAI API error:", response.status, response.statusText, errorText);
     return new Array(1536).fill(0);
   }
 
-  const data = (await response.json()) as EmbeddingResponse;
-  return data.data[0]?.embedding || new Array(1536).fill(0);
+  try {
+    const data = (await response.json()) as EmbeddingResponse;
+    return data.data[0]?.embedding || new Array(1536).fill(0);
+  } catch (error) {
+    const responseText = await response.text();
+    console.error("❌ Failed to parse embedding response:", error, "Response:", responseText);
+    return new Array(1536).fill(0);
+  }
 }
 
 /**
@@ -72,7 +79,8 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     });
 
     if (!response.ok) {
-      console.error("OpenAI API error:", response.status, response.statusText);
+      const errorText = await response.text();
+      console.error("❌ OpenAI API batch error:", response.status, response.statusText, errorText);
       return texts.map(() => new Array(1536).fill(0));
     }
 

@@ -107,22 +107,35 @@ export const regenerateOutline = async (
 
   const outlineBefore = storyOutline.chapters?.slice(0, chapterIndex);
 
-  const { text } = await generateText({
-    model: google("gemini-2.5-pro"),
-    system: systemPrompt(
-      storyOutline,
-      storyOutline.chapters
-        .map(
-          (chapter, index) =>
-            `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
-              .map((point) => `- ${point}`)
-              .join("\n")}`
-        )
-        .join("\n")
-    ),
-    prompt: getPrompt(JSON.stringify(outlineBefore), job.user_prompt!),
-    temperature: 0.5,
-  });
+  const system = systemPrompt(
+    storyOutline,
+    storyOutline.chapters
+      .map(
+        (chapter, index) =>
+          `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
+            .map((point) => `- ${point}`)
+            .join("\n")}`
+      )
+      .join("\n")
+  );
 
-  return text.replace(/^Of course, here it is:/, "");
+  console.log(system);
+
+  const prompt = getPrompt(JSON.stringify(outlineBefore), job.user_prompt!);
+  console.log(prompt);
+
+  try {
+    console.log("🔄 Regenerating story outline with Gemini");
+    const { text } = await generateText({
+      model: google("gemini-2.5-pro"),
+      system,
+      prompt,
+      temperature: 0.4,
+    });
+    console.log("✅ Successfully regenerated outline");
+    return text.replace(/^Of course, here it is:/, "");
+  } catch (error) {
+    console.error("❌ Failed to regenerate outline:", error);
+    throw new Error(`Outline regeneration failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 };

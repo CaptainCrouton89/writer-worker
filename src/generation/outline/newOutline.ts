@@ -111,12 +111,18 @@ export const generateNewOutline = async (storyOutline: {
   });
   console.log(prompt);
 
-  const { text } = await generateText({
-    model: google("gemini-2.5-pro"),
-    system,
-    prompt,
-    temperature: 0.5,
-  });
-
-  return text.replace(/^Of course, here it is:/, "");
+  try {
+    console.log("🔮 Generating new story outline with Gemini");
+    const { text } = await generateText({
+      model: google("gemini-2.5-pro"),
+      system,
+      prompt,
+      temperature: 0.5,
+    });
+    console.log("✅ Successfully generated new outline");
+    return text.replace(/^Of course, here it is:/, "");
+  } catch (error) {
+    console.error("❌ Failed to generate new outline:", error);
+    throw new Error(`New outline generation failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 };

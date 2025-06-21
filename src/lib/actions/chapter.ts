@@ -51,7 +51,7 @@ export async function getChapterContent(
   const { data, error } = await supabase
     .from("chapters")
     .select("content")
-    .eq("parent_id", chapterParentId)
+    .eq("id", chapterParentId)
     .single();
 
   if (error) {

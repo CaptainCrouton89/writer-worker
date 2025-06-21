@@ -11,7 +11,8 @@ const config: WorkerConfig = {
 let isShuttingDown = false;
 
 export async function startWorker() {
-  console.log("🚀 Starting worker with config:", config);
+  console.log("🚀 Starting Smut Writer Worker");
+  console.log("⚙️ Worker configuration:", config);
 
   // Graceful shutdown handling
   process.on("SIGTERM", () => {

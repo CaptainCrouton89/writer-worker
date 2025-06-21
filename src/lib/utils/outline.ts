@@ -28,6 +28,7 @@ export const outlineToText = (outline: StoryOutline): string => {
 };
 
 export const parseOutlineResponse = (response: string): Chapter[] => {
+  console.log("📋 Parsing outline response");
   try {
     const lines = response
       .split("\n")
@@ -76,11 +77,14 @@ export const parseOutlineResponse = (response: string): Chapter[] => {
     }
 
     if (chapters.length === 0) {
+      console.error("❌ No chapters found in outline response. Response preview:", response.slice(0, 200));
       throw new Error("No chapters found in response");
     }
 
+    console.log(`✅ Parsed ${chapters.length} chapters from outline`);
     return chapters;
   } catch (error) {
+    console.error("❌ Failed to parse outline response:", error, "Response preview:", response.slice(0, 200));
     throw new Error(`Failed to parse outline: ${error}`);
   }
 };
