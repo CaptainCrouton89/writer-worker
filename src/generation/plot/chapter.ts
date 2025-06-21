@@ -1,7 +1,7 @@
+import { CHAPTER_GENERATION_STATUS } from "../../lib/constants/status.js";
 import { supabase } from "../../lib/supabase.js";
 import { Chapter, GenerationJob, UserPrompt } from "../../lib/types.js";
 import { generatePlotPoint } from "./plotPoint.js";
-import { CHAPTER_GENERATION_STATUS } from "../../lib/constants/status.js";
 
 interface StoryOutline {}
 
@@ -49,7 +49,7 @@ export const generateChapter = async (
     );
 
     // Append the generated content
-    chapterContent += plotPointContent;
+    chapterContent += "\n\n" + plotPointContent;
 
     // Update plot point progress in the database
     const plotPointProgress = ((plotPointIndex + 1) / totalPlotPoints) * 100;
@@ -64,8 +64,12 @@ export const generateChapter = async (
     // Update chapter content in database incrementally
     try {
       console.log(
-        `💾 Updating chapter ${job.chapter_id} with ${chapterContent.length} characters, progress: ${plotPointProgress}%, status: ${
-          plotPointProgress === 100 ? CHAPTER_GENERATION_STATUS.COMPLETED : CHAPTER_GENERATION_STATUS.GENERATING
+        `💾 Updating chapter ${job.chapter_id} with ${
+          chapterContent.length
+        } characters, progress: ${plotPointProgress}%, status: ${
+          plotPointProgress === 100
+            ? CHAPTER_GENERATION_STATUS.COMPLETED
+            : CHAPTER_GENERATION_STATUS.GENERATING
         }`
       );
 
@@ -75,7 +79,9 @@ export const generateChapter = async (
           content: chapterContent,
           generation_progress: plotPointProgress,
           generation_status:
-            plotPointProgress === 100 ? CHAPTER_GENERATION_STATUS.COMPLETED : CHAPTER_GENERATION_STATUS.GENERATING,
+            plotPointProgress === 100
+              ? CHAPTER_GENERATION_STATUS.COMPLETED
+              : CHAPTER_GENERATION_STATUS.GENERATING,
           updated_at: new Date().toISOString(),
         })
         .eq("id", job.chapter_id)
@@ -86,9 +92,7 @@ export const generateChapter = async (
           `❌ Database error updating chapter ${job.chapter_id}:`,
           error
         );
-        throw new Error(
-          `Failed to update chapter content: ${error.message}`
-        );
+        throw new Error(`Failed to update chapter content: ${error.message}`);
       }
 
       if (!data || data.length === 0) {
