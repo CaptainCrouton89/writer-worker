@@ -52,11 +52,11 @@ export const generateChapter = async (
     chapterContent += "\n\n" + plotPointContent;
 
     // Update plot point progress in the database
-    const plotPointProgress = ((plotPointIndex + 1) / totalPlotPoints) * 100;
+    const plotPointProgress = ((plotPointIndex + 1) / totalPlotPoints) * 60;
     await supabase
       .from("generation_jobs")
       .update({
-        progress: 40 + 0.6 * plotPointProgress,
+        progress: 40 + plotPointProgress,
         updated_at: new Date().toISOString(),
       })
       .eq("id", job.id);
@@ -66,8 +66,8 @@ export const generateChapter = async (
       console.log(
         `💾 Updating chapter ${job.chapter_id} with ${
           chapterContent.length
-        } characters, progress: ${plotPointProgress}%, status: ${
-          plotPointProgress === 100
+        } characters, progress: ${((plotPointIndex + 1) / totalPlotPoints) * 100}%, status: ${
+          plotPointIndex + 1 === totalPlotPoints
             ? CHAPTER_GENERATION_STATUS.COMPLETED
             : CHAPTER_GENERATION_STATUS.GENERATING
         }`
@@ -77,9 +77,9 @@ export const generateChapter = async (
         .from("chapters")
         .update({
           content: chapterContent,
-          generation_progress: plotPointProgress,
+          generation_progress: ((plotPointIndex + 1) / totalPlotPoints) * 100,
           generation_status:
-            plotPointProgress === 100
+            plotPointIndex + 1 === totalPlotPoints
               ? CHAPTER_GENERATION_STATUS.COMPLETED
               : CHAPTER_GENERATION_STATUS.GENERATING,
           updated_at: new Date().toISOString(),
@@ -118,7 +118,7 @@ export const generateChapter = async (
     console.log(
       `✅ Completed plot point ${
         plotPointIndex + 1
-      }/${totalPlotPoints} (${plotPointProgress.toFixed(1)}%)`
+      }/${totalPlotPoints} (${(((plotPointIndex + 1) / totalPlotPoints) * 100).toFixed(1)}%)`
     );
   }
 
