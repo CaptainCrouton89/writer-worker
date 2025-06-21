@@ -1,6 +1,6 @@
 import { JobProcessor } from "./job-processor.js";
 import { supabase } from "./lib/supabase.js";
-import { GenerationJob, WorkerConfig } from "./lib/types.js";
+import { WorkerConfig } from "./lib/types.js";
 
 const config: WorkerConfig = {
   pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || "5000"),
@@ -112,9 +112,7 @@ async function cleanupOrphanedChapters() {
       // Check if there are any active jobs for this chapter
       const { data: activeJobs, error: jobQueryError } = await supabase
         .from("generation_jobs")
-        .select(
-          "id, status, story_outline, user_preferences, bullet_progress, current_step"
-        )
+        .select("id, status, story_outline, bullet_progress, current_step")
         .eq("chapter_id", chapter.id)
         .in("status", ["pending", "processing"]);
 
@@ -174,9 +172,7 @@ async function cleanupOrphanedChapters() {
 
       const { data: allJobs, error: allJobsError } = await supabase
         .from("generation_jobs")
-        .select(
-          "id, status, story_outline, user_preferences, bullet_progress, current_step"
-        )
+        .select("id, status, story_outline, bullet_progress, current_step")
         .eq("chapter_id", chapter.id)
         .order("updated_at", { ascending: false })
         .limit(1);
@@ -229,7 +225,6 @@ async function cleanupOrphanedChapters() {
             sequence_id: chapterWithSequence.sequence_id,
             chapter_id: chapter.id,
             user_id: (chapterWithSequence.sequences as any).created_by,
-            user_preferences: lastJob.user_preferences,
             story_outline: lastJob.story_outline,
             bullet_progress: lastJob.bullet_progress || 0,
             status: "pending",

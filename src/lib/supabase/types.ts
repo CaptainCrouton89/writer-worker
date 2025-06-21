@@ -219,7 +219,6 @@ export type Database = {
           story_outline: Json | null
           updated_at: string | null
           user_id: string | null
-          user_preferences: Json
           user_prompt: string | null
         }
         Insert: {
@@ -237,7 +236,6 @@ export type Database = {
           story_outline?: Json | null
           updated_at?: string | null
           user_id?: string | null
-          user_preferences: Json
           user_prompt?: string | null
         }
         Update: {
@@ -255,7 +253,6 @@ export type Database = {
           story_outline?: Json | null
           updated_at?: string | null
           user_id?: string | null
-          user_preferences?: Json
           user_prompt?: string | null
         }
         Relationships: [
@@ -318,6 +315,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          ignored_trigger_warnings: string[] | null
           story_points: number
           theme: string | null
           updated_at: string | null
@@ -327,6 +325,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          ignored_trigger_warnings?: string[] | null
           story_points?: number
           theme?: string | null
           updated_at?: string | null
@@ -336,6 +335,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          ignored_trigger_warnings?: string[] | null
           story_points?: number
           theme?: string | null
           updated_at?: string | null

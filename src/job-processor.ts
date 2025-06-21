@@ -77,8 +77,12 @@ export class JobProcessor {
     job: GenerationJob,
     chapterIndex: number
   ): Promise<StoryOutline> {
+    console.log(job);
     const hasUserPrompt = !!job.user_prompt;
-    const hasOutline = !!job.story_outline;
+    const hasOutline =
+      !!job.story_outline &&
+      !!(job.story_outline as unknown as StoryOutline).chapters &&
+      (job.story_outline as unknown as StoryOutline).chapters.length > 0;
 
     if (!hasOutline) {
       // Case 1: No outline exists - generate new one
@@ -98,16 +102,20 @@ export class JobProcessor {
   private async generateNewOutline(job: GenerationJob): Promise<StoryOutline> {
     console.log(`🔮 Generating new story outline`);
 
+    console.log(job);
+
     const outlineString = await generateNewOutline(
       job.story_outline as unknown as StoryOutline
     );
+
+    console.log(outlineString);
 
     const chapters = parseOutlineResponse(outlineString);
 
     const newOutline = {
       ...(job.story_outline as unknown as StoryOutline),
       chapters,
-    } as unknown as StoryOutline;
+    };
 
     const { error } = await supabase
       .from("generation_jobs")

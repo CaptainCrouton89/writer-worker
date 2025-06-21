@@ -15,6 +15,8 @@ This is a **Node.js background worker service** that handles AI-powered story ge
 - `npm run db:pull` - Pull latest schema from Supabase
 - `npm run db:types` - Generate TypeScript types from Supabase schema
 
+**Note**: No test framework is currently configured - tests need to be set up if required.
+
 ## Architecture
 
 The application consists of two main components:
@@ -24,9 +26,13 @@ The application consists of two main components:
 
 ### Core Services
 
-- **Generation Service** (`src/lib/generation-service.ts`) - Handles AI story generation logic
+- **Job Processor** (`src/job-processor.ts`) - Main job processing logic with retry and error handling
+- **Generation Modules** (`src/generation/`) - Specialized AI generation logic:
+  - `metadata/` - Story metadata generation
+  - `outline/` - Story outline creation and regeneration  
+  - `plot/` - Chapter and plot point generation
 - **Supabase Client** (`src/lib/supabase.ts`) - Database connection and operations
-- **Worker Process** - Configurable concurrency with retry logic and graceful shutdown
+- **Worker Process** (`src/worker.ts`) - Configurable concurrency with retry logic and graceful shutdown
 
 ### Job Processing Flow
 
@@ -64,3 +70,9 @@ Optional configuration:
 - `chapters` - Generated story content
 - `sequences` - Story collections
 - `chapter_sequence_map` - Chapter-to-sequence relationships
+
+## Error Handling Philosophy
+
+- **No Defensive Null Checking**: Don't add null checks or default values to mask missing required data
+- **Fail Fast**: If required properties are null/undefined, let the error bubble up - it indicates a real problem that needs to be fixed
+- **Data Integrity**: Missing required fields in database objects should cause failures, not be silently handled with defaults
