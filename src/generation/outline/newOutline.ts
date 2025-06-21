@@ -1,7 +1,8 @@
 import { google } from "@ai-sdk/google";
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { Chapter } from "../../lib/types/generation";
+import { Chapter } from "../../lib/types";
+import { StoryOutlineSchema } from "./types";
 
 const spiceGuidelines = [
   `
@@ -122,7 +123,7 @@ export const generateNewOutline = async (storyOutline: {
       temperature: 0.5,
     });
     console.log("✅ Successfully generated new outline");
-    return object;
+    return object.chapters;
   } catch (error) {
     console.error("❌ Failed to generate new outline:", error);
     throw new Error(

@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { Chapter, StoryOutline } from "../../lib/types/generation";
+import { Chapter } from "../../lib/types";
 
 const getIntroduction = (
   firstChapter: boolean,
@@ -135,7 +135,7 @@ Continue the story from it was left off. Write the content for the plot point: "
 export const generatePlotPoint = async (
   length: number,
   spiceLevel: number,
-  outline: StoryOutline,
+  outline: Chapter[],
   chapterIndex: number,
   plotPointIndex: number,
   previousChapterContent: string,

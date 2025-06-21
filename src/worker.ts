@@ -1,4 +1,4 @@
-import { JobProcessor } from "./job-processor.js";
+import { JobProcessorV2 } from "./job-processor-v2.js";
 import { supabase } from "./lib/supabase.js";
 import { GenerationJob, WorkerConfig } from "./lib/types.js";
 
@@ -29,7 +29,7 @@ export async function startWorker() {
   await cleanupOrphanedChapters();
 
   // Create job processor instance
-  const processor = new JobProcessor();
+  const processor = new JobProcessorV2();
 
   // Main worker loop
   while (!isShuttingDown) {
@@ -45,7 +45,7 @@ export async function startWorker() {
   console.log("🛑 Worker shut down gracefully");
 }
 
-async function pollAndProcessJobs(processor: JobProcessor) {
+async function pollAndProcessJobs(processor: JobProcessorV2) {
   try {
     // Query for pending jobs
     const { data: jobs, error } = await supabase
@@ -115,7 +115,7 @@ async function cleanupOrphanedChapters() {
       // Check if there are any active jobs for this chapter
       const { data: activeJobs, error: jobQueryError } = await supabase
         .from("generation_jobs")
-        .select("id, status, story_outline, bullet_progress, current_step, user_prompt")
+        .select("id, status, bullet_progress, current_step")
         .eq("chapter_id", chapter.id)
         .in("status", ["pending", "processing"]);
 
@@ -148,9 +148,7 @@ async function cleanupOrphanedChapters() {
               .from("generation_jobs")
               .update({
                 status: "pending",
-                current_step: stuckJob.story_outline
-                  ? "resuming"
-                  : "initializing",
+                current_step: "initializing",
                 updated_at: new Date().toISOString(),
               })
               .eq("id", stuckJob.id);
@@ -175,7 +173,7 @@ async function cleanupOrphanedChapters() {
 
       const { data: allJobs, error: allJobsError } = await supabase
         .from("generation_jobs")
-        .select("id, status, story_outline, bullet_progress, current_step, user_prompt")
+        .select("id, status, bullet_progress, current_step")
         .eq("chapter_id", chapter.id)
         .order("updated_at", { ascending: false })
         .limit(1);
@@ -219,8 +217,7 @@ async function cleanupOrphanedChapters() {
 
         // Create a resume job based on the last job's progress
         const shouldResume =
-          lastJob.story_outline ||
-          (chapter.content && chapter.content.trim().length > 0);
+          chapter.content && chapter.content.trim().length > 0;
 
         const { error: resumeJobError } = await supabase
           .from("generation_jobs")
@@ -228,8 +225,6 @@ async function cleanupOrphanedChapters() {
             sequence_id: chapterWithSequence.sequence_id,
             chapter_id: chapter.id,
             user_id: (chapterWithSequence.sequences as any).created_by,
-            user_prompt: lastJob.user_prompt,
-            story_outline: lastJob.story_outline,
             bullet_progress: lastJob.bullet_progress || 0,
             status: "pending",
             progress: 0,
@@ -247,7 +242,7 @@ async function cleanupOrphanedChapters() {
           console.log(
             `🔄 Created ${shouldResume ? "resume" : "new"} job for chapter ${
               chapter.id
-            }${lastJob.story_outline ? " with existing outline" : ""}${
+            }${
               lastJob.bullet_progress
                 ? ` from bullet ${lastJob.bullet_progress}`
                 : ""

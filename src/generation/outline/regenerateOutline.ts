@@ -1,8 +1,8 @@
 import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { generateObject } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { GenerationJob } from "../../lib/types";
-import { StoryOutline } from "../../lib/types/generation";
+import { Chapter, UserPrompt, UserPromptHistory } from "../../lib/types";
+import { StoryOutlineSchema } from "./types";
 
 const spiceGuidelines = [
   `
@@ -25,11 +25,11 @@ const spiceGuidelines = [
 - Maintain character development alongside the sexual progression with proper pacing`,
 ];
 
-const systemPrompt = (outline: StoryOutline, storyOutline: string) => `
+const systemPrompt = (promptData: UserPrompt, storyOutline: string) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to modify the outline provided by the user, incorporating the user's request into the plot and style of the story. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
-${spiceGuidelines[outline.spice_level]}
+${spiceGuidelines[promptData.spice_level]}
 </story_guidelines>
 
 <old_outline>
@@ -37,17 +37,19 @@ ${storyOutline}
 </old_outline>
 
 <outline_structure>
-- The outline is for a ${STORY_LENGTH_CONFIG[outline.story_length].type} story.
+- The outline is for a ${
+  STORY_LENGTH_CONFIG[promptData.story_length].type
+} story.
 - There should be a total of ${
-  STORY_LENGTH_CONFIG[outline.story_length].chapterCount
+  STORY_LENGTH_CONFIG[promptData.story_length].chapterCount
 } chapters
 - Each chapter should have exactly ${
-  STORY_LENGTH_CONFIG[outline.story_length].bulletsPerChapter
+  STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter
 } plot points
 - Each plot point should represent approximately ${
-  STORY_LENGTH_CONFIG[outline.story_length].pagesPerBullet
+  STORY_LENGTH_CONFIG[promptData.story_length].pagesPerBullet
 } pages of content, or about ${
-  STORY_LENGTH_CONFIG[outline.story_length].wordTarget
+  STORY_LENGTH_CONFIG[promptData.story_length].wordTarget
 }
 - Use good pacing, and follow typical story structure.
 </outline_structure>
@@ -97,42 +99,36 @@ Write the new outline, continuing where the old outline left off.
 };
 
 export const regenerateOutline = async (
-  job: GenerationJob,
-  outlineBefore: StoryOutline,
-  chapterIndex: number
-): Promise<string> => {
-  const storyOutline = job.story_outline! as unknown as StoryOutline;
-  if (!storyOutline.chapters) {
-    throw new Error("No chapters found in story outline");
-  }
+  userPrompt: string,
+  promptData: UserPromptHistory,
+  existingChapters: Chapter[]
+): Promise<Chapter[]> => {
+  const outlineString = existingChapters
+    .map(
+      (chapter, index) =>
+        `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
+          .map((point) => `- ${point}`)
+          .join("\n")}`
+    )
+    .join("\n");
 
-  const system = systemPrompt(
-    storyOutline,
-    storyOutline.chapters
-      .map(
-        (chapter, index) =>
-          `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
-            .map((point) => `- ${point}`)
-            .join("\n")}`
-      )
-      .join("\n")
-  );
-
+  const system = systemPrompt(promptData[0], outlineString);
   console.log(system);
 
-  const prompt = getPrompt(JSON.stringify(outlineBefore), job.user_prompt!);
+  const prompt = getPrompt(outlineString, userPrompt);
   console.log(prompt);
 
   try {
     console.log("🔄 Regenerating story outline with Gemini");
-    const { text } = await generateText({
+    const { object } = await generateObject({
       model: google("gemini-2.5-pro"),
       system,
       prompt,
+      schema: StoryOutlineSchema,
       temperature: 0.4,
     });
     console.log("✅ Successfully regenerated outline");
-    return text.replace(/^Of course, here it is:/, "");
+    return object.chapters;
   } catch (error) {
     console.error("❌ Failed to regenerate outline:", error);
     throw new Error(

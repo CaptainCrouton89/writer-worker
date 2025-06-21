@@ -49,6 +49,7 @@ The application consists of two main components:
 - **Database Migrations**: Always use `supabase migration new <name>` to create migrations, then `supabase db push` to apply to remote. For complex migrations, create multiple smaller migrations
 - **SQL Function Debugging**: When creating complex SQL functions with JOINs, be careful of ambiguous column references - fully qualify columns (e.g., `s.id`, `c.id as chapter_id`) to avoid PostgreSQL errors
 - `src/lib/supabase/types.ts` is a generated file. Do not edit it. If you need to add additional types, don't put them there
+- Table definitions are defined in `docs/DATABASE_SCHEMA.md`
 
 ## Environment Variables
 
