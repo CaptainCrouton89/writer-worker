@@ -1,8 +1,8 @@
 import {
   generateCompleteFirstChapter,
+  generateOutlineEmbedding,
   generateStoryOutline,
   regenerateOutlineWithUserPrompt,
-  generateOutlineEmbedding,
   saveOutlineEmbedding,
   StoryOutline,
   UserPreferences,
@@ -110,8 +110,13 @@ async function processGenerationJob(job: GenerationJob) {
       .single();
 
     if (chapterMappingError) {
-      console.error(`❌ Failed to get chapter index for job ${job.id}:`, chapterMappingError);
-      throw new Error(`Failed to get chapter index: ${chapterMappingError.message}`);
+      console.error(
+        `❌ Failed to get chapter index for job ${job.id}:`,
+        chapterMappingError
+      );
+      throw new Error(
+        `Failed to get chapter index: ${chapterMappingError.message}`
+      );
     }
 
     const chapterIndex = chapterMapping.chapter_index;
@@ -137,7 +142,7 @@ async function processGenerationJob(job: GenerationJob) {
       }
 
       outline = regenerateResult.data;
-      
+
       await updateJobProgress(job.id, "saving_regenerated_outline", 15);
 
       // Save the regenerated outline to the job and clear the user prompt
@@ -155,7 +160,9 @@ async function processGenerationJob(job: GenerationJob) {
           `❌ Failed to save regenerated outline for job ${job.id}:`,
           outlineError
         );
-        throw new Error(`Failed to save regenerated outline: ${outlineError.message}`);
+        throw new Error(
+          `Failed to save regenerated outline: ${outlineError.message}`
+        );
       } else {
         console.log(`✅ Regenerated outline saved for job ${job.id}`);
         await updateJobProgress(job.id, "regenerated_outline_saved", 20);
@@ -163,9 +170,19 @@ async function processGenerationJob(job: GenerationJob) {
         // Update sequence with title and description
         if (job.sequence_id && outline.title && outline.description) {
           try {
-            await updateSequenceMetadata(job.sequence_id, outline.title, outline.description);
+            await updateSequenceMetadata(
+              job.sequence_id,
+              outline.title,
+              outline.description,
+              outline.tags as string[],
+              outline.trigger_warnings as string[],
+              outline.is_sexually_explicit
+            );
           } catch (error) {
-            console.error(`❌ Error updating sequence metadata for job ${job.id}:`, error);
+            console.error(
+              `❌ Error updating sequence metadata for job ${job.id}:`,
+              error
+            );
           }
         }
       }
@@ -183,7 +200,7 @@ async function processGenerationJob(job: GenerationJob) {
       }
 
       outline = outlineResult.data;
-      
+
       await updateJobProgress(job.id, "saving_outline", 15);
 
       // Save the outline to the job
@@ -213,16 +230,29 @@ async function processGenerationJob(job: GenerationJob) {
               await saveOutlineEmbedding(job.sequence_id, embeddingResult);
             }
           } catch (error) {
-            console.error(`❌ Error generating outline embedding for job ${job.id}:`, error);
+            console.error(
+              `❌ Error generating outline embedding for job ${job.id}:`,
+              error
+            );
           }
         }
 
         // Update sequence with title and description
         if (job.sequence_id && outline.title && outline.description) {
           try {
-            await updateSequenceMetadata(job.sequence_id, outline.title, outline.description);
+            await updateSequenceMetadata(
+              job.sequence_id,
+              outline.title,
+              outline.description,
+              outline.tags as string[],
+              outline.trigger_warnings as string[],
+              outline.is_sexually_explicit
+            );
           } catch (error) {
-            console.error(`❌ Error updating sequence metadata for job ${job.id}:`, error);
+            console.error(
+              `❌ Error updating sequence metadata for job ${job.id}:`,
+              error
+            );
           }
         }
       }
@@ -433,15 +463,21 @@ async function cleanupOrphanedChapters() {
       return;
     }
 
-    console.log(`🔍 Found ${orphanedChapters.length} chapters in 'generating' status`);
+    console.log(
+      `🔍 Found ${orphanedChapters.length} chapters in 'generating' status`
+    );
 
     for (const chapter of orphanedChapters) {
-      console.log(`🔍 Checking chapter ${chapter.id} (progress: ${chapter.generation_progress}%)...`);
-      
+      console.log(
+        `🔍 Checking chapter ${chapter.id} (progress: ${chapter.generation_progress}%)...`
+      );
+
       // Check if there are any active jobs for this chapter
       const { data: activeJobs, error: jobQueryError } = await supabase
         .from("generation_jobs")
-        .select("id, status, story_outline, user_preferences, bullet_progress, current_step")
+        .select(
+          "id, status, story_outline, user_preferences, bullet_progress, current_step"
+        )
         .eq("chapter_id", chapter.id)
         .in("status", ["pending", "processing"]);
 
@@ -454,27 +490,38 @@ async function cleanupOrphanedChapters() {
       }
 
       if (activeJobs && activeJobs.length > 0) {
-        console.log(`⏳ Chapter ${chapter.id} has ${activeJobs.length} active job(s), checking if stuck...`);
-        
+        console.log(
+          `⏳ Chapter ${chapter.id} has ${activeJobs.length} active job(s), checking if stuck...`
+        );
+
         // Check if jobs are stuck in processing (likely from worker restart)
-        const stuckJobs = activeJobs.filter(job => job.status === "processing");
-        
+        const stuckJobs = activeJobs.filter(
+          (job) => job.status === "processing"
+        );
+
         if (stuckJobs.length > 0) {
-          console.log(`🔄 Found ${stuckJobs.length} stuck job(s) for chapter ${chapter.id}, resetting to pending...`);
-          
+          console.log(
+            `🔄 Found ${stuckJobs.length} stuck job(s) for chapter ${chapter.id}, resetting to pending...`
+          );
+
           // Reset stuck jobs to pending so they can be picked up again
           for (const stuckJob of stuckJobs) {
             const { error: resetError } = await supabase
               .from("generation_jobs")
               .update({
                 status: "pending",
-                current_step: stuckJob.story_outline ? "resuming" : "initializing",
+                current_step: stuckJob.story_outline
+                  ? "resuming"
+                  : "initializing",
                 updated_at: new Date().toISOString(),
               })
               .eq("id", stuckJob.id);
 
             if (resetError) {
-              console.error(`❌ Failed to reset stuck job ${stuckJob.id}:`, resetError);
+              console.error(
+                `❌ Failed to reset stuck job ${stuckJob.id}:`,
+                resetError
+              );
             } else {
               console.log(`✅ Reset stuck job ${stuckJob.id} to pending`);
             }
@@ -484,11 +531,15 @@ async function cleanupOrphanedChapters() {
       }
 
       // No active jobs found - look for any incomplete jobs to resume
-      console.log(`🔍 No active jobs for chapter ${chapter.id}, looking for resumable jobs...`);
-      
+      console.log(
+        `🔍 No active jobs for chapter ${chapter.id}, looking for resumable jobs...`
+      );
+
       const { data: allJobs, error: allJobsError } = await supabase
         .from("generation_jobs")
-        .select("id, status, story_outline, user_preferences, bullet_progress, current_step")
+        .select(
+          "id, status, story_outline, user_preferences, bullet_progress, current_step"
+        )
         .eq("chapter_id", chapter.id)
         .order("updated_at", { ascending: false })
         .limit(1);
@@ -503,21 +554,24 @@ async function cleanupOrphanedChapters() {
 
       if (allJobs && allJobs.length > 0) {
         const lastJob = allJobs[0];
-        console.log(`🔍 Found last job ${lastJob.id} with status '${lastJob.status}' for chapter ${chapter.id}`);
+        console.log(
+          `🔍 Found last job ${lastJob.id} with status '${lastJob.status}' for chapter ${chapter.id}`
+        );
 
         // Get the sequence and user info from the chapter
-        const { data: chapterWithSequence, error: chapterFetchError } = await supabase
-          .from("chapter_sequence_map")
-          .select(
-            `
+        const { data: chapterWithSequence, error: chapterFetchError } =
+          await supabase
+            .from("chapter_sequence_map")
+            .select(
+              `
             sequence_id,
             sequences!inner (
               created_by
             )
           `
-          )
-          .eq("chapter_id", chapter.id)
-          .single();
+            )
+            .eq("chapter_id", chapter.id)
+            .single();
 
         if (chapterFetchError) {
           console.error(
@@ -528,8 +582,10 @@ async function cleanupOrphanedChapters() {
         }
 
         // Create a resume job based on the last job's progress
-        const shouldResume = lastJob.story_outline || (chapter.content && chapter.content.trim().length > 0);
-        
+        const shouldResume =
+          lastJob.story_outline ||
+          (chapter.content && chapter.content.trim().length > 0);
+
         const { error: resumeJobError } = await supabase
           .from("generation_jobs")
           .insert({
@@ -553,13 +609,21 @@ async function cleanupOrphanedChapters() {
           );
         } else {
           console.log(
-            `🔄 Created ${shouldResume ? 'resume' : 'new'} job for chapter ${chapter.id}${lastJob.story_outline ? ' with existing outline' : ''}${lastJob.bullet_progress ? ` from bullet ${lastJob.bullet_progress}` : ''}`
+            `🔄 Created ${shouldResume ? "resume" : "new"} job for chapter ${
+              chapter.id
+            }${lastJob.story_outline ? " with existing outline" : ""}${
+              lastJob.bullet_progress
+                ? ` from bullet ${lastJob.bullet_progress}`
+                : ""
+            }`
           );
         }
       } else {
         // No jobs found at all, mark chapter as failed
-        console.log(`❌ No jobs found for chapter ${chapter.id}, marking as failed`);
-        
+        console.log(
+          `❌ No jobs found for chapter ${chapter.id}, marking as failed`
+        );
+
         const { error: updateError } = await supabase
           .from("chapters")
           .update({
@@ -587,27 +651,60 @@ async function cleanupOrphanedChapters() {
   }
 }
 
-async function updateSequenceMetadata(sequenceId: string, title: string, description: string) {
+async function updateSequenceMetadata(
+  sequenceId: string,
+  title: string,
+  description: string,
+  tags?: string[],
+  triggerWarnings?: string[],
+  isSexuallyExplicit?: boolean
+) {
   try {
     console.log(`📝 Updating sequence ${sequenceId} with title: "${title}"`);
-    
+
+    const updateData: any = {
+      name: title,
+      description: description,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Add optional metadata fields if provided
+    if (tags !== undefined) {
+      updateData.tags = tags;
+      console.log(`📝 Adding ${tags.length} tags: ${tags.join(", ")}`);
+    }
+    if (triggerWarnings !== undefined) {
+      updateData.trigger_warnings = triggerWarnings;
+      console.log(
+        `⚠️ Adding ${
+          triggerWarnings.length
+        } trigger warnings: ${triggerWarnings.join(", ")}`
+      );
+    }
+    if (isSexuallyExplicit !== undefined) {
+      updateData.is_sexually_explicit = isSexuallyExplicit;
+      console.log(`🔞 Setting sexually explicit flag: ${isSexuallyExplicit}`);
+    }
+
     const { error } = await supabase
       .from("sequences")
-      .update({
-        name: title,
-        description: description,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", sequenceId);
 
     if (error) {
-      console.error(`❌ Failed to update sequence metadata for ${sequenceId}:`, error);
+      console.error(
+        `❌ Failed to update sequence metadata for ${sequenceId}:`,
+        error
+      );
       throw error;
     } else {
       console.log(`✅ Successfully updated sequence ${sequenceId} metadata`);
     }
   } catch (error) {
-    console.error(`❌ Error in updateSequenceMetadata for ${sequenceId}:`, error);
+    console.error(
+      `❌ Error in updateSequenceMetadata for ${sequenceId}:`,
+      error
+    );
     throw error;
   }
 }
