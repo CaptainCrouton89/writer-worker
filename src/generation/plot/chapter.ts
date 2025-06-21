@@ -1,6 +1,7 @@
 import { supabase } from "../../lib/supabase.js";
 import { Chapter, GenerationJob, UserPrompt } from "../../lib/types.js";
 import { generatePlotPoint } from "./plotPoint.js";
+import { CHAPTER_GENERATION_STATUS } from "../../lib/constants/status.js";
 
 interface StoryOutline {}
 
@@ -64,7 +65,7 @@ export const generateChapter = async (
     try {
       console.log(
         `💾 Updating chapter ${job.chapter_id} with ${chapterContent.length} characters, progress: ${plotPointProgress}%, status: ${
-          plotPointProgress === 100 ? "completed" : "generating"
+          plotPointProgress === 100 ? CHAPTER_GENERATION_STATUS.COMPLETED : CHAPTER_GENERATION_STATUS.GENERATING
         }`
       );
 
@@ -74,7 +75,7 @@ export const generateChapter = async (
           content: chapterContent,
           generation_progress: plotPointProgress,
           generation_status:
-            plotPointProgress === 100 ? "completed" : "generating",
+            plotPointProgress === 100 ? CHAPTER_GENERATION_STATUS.COMPLETED : CHAPTER_GENERATION_STATUS.GENERATING,
           updated_at: new Date().toISOString(),
         })
         .eq("id", job.chapter_id)

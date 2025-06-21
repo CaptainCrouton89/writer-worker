@@ -16,6 +16,7 @@ import { Tables } from "./lib/supabase/types.js";
 import { Chapter, GenerationJob, Sequence } from "./lib/types.js";
 import { OutlineProcessor } from "./services/outline-processor.js";
 import { SequenceService } from "./services/sequence-service.js";
+import { JOB_STATUS, JOB_STEPS } from "./lib/constants/status.js";
 
 export class JobProcessorV2 {
   private sequenceService: SequenceService;
@@ -46,7 +47,7 @@ export class JobProcessorV2 {
       const chapterIndex = await getChapterIndex(job.chapter_id);
 
       // Step 4: Process outline (generate/regenerate if needed)
-      await this.updateJobProgress(job.id, 15, "processing_outline");
+      await this.updateJobProgress(job.id, 15, JOB_STEPS.PROCESSING_OUTLINE);
       const outlineResult = await this.outlineProcessor.processOutline(
         job,
         sequence,
@@ -55,19 +56,19 @@ export class JobProcessorV2 {
 
       // Step 5: If outline was generated, save it and generate metadata
       if (outlineResult.wasGenerated) {
-        await this.updateJobProgress(job.id, 25, "saving_outline");
+        await this.updateJobProgress(job.id, 25, JOB_STEPS.SAVING_OUTLINE);
         await this.sequenceService.updateChapters(
           job.sequence_id,
           outlineResult.chapters
         );
 
-        await this.updateJobProgress(job.id, 30, "generating_metadata");
+        await this.updateJobProgress(job.id, 30, JOB_STEPS.GENERATING_METADATA);
         await this.generateAndSaveMetadata(
           job.sequence_id,
           outlineResult.chapters
         );
 
-        await this.updateJobProgress(job.id, 35, "generating_embedding");
+        await this.updateJobProgress(job.id, 35, JOB_STEPS.GENERATING_EMBEDDING);
         await this.generateAndSaveEmbedding(sequence);
 
         // Mark the prompt as processed if applicable
@@ -80,7 +81,7 @@ export class JobProcessorV2 {
       }
 
       // Step 6: Generate the chapter content
-      await this.updateJobProgress(job.id, 40, "generating_chapter_content");
+      await this.updateJobProgress(job.id, 40, JOB_STEPS.GENERATING_CHAPTER_CONTENT);
       await this.generateChapterContent(
         job,
         chapter,
@@ -90,7 +91,7 @@ export class JobProcessorV2 {
       );
 
       // Step 7: Complete the job
-      await this.updateJobProgress(job.id, 100, "completing_job");
+      await this.updateJobProgress(job.id, 100, JOB_STEPS.COMPLETING_JOB);
       await this.completeJob(job.id, job.chapter_id);
     } catch (error) {
       await this.handleJobError(job.id, error as Error);
@@ -103,9 +104,9 @@ export class JobProcessorV2 {
     const { error } = await supabase
       .from("generation_jobs")
       .update({
-        status: "processing",
+        status: JOB_STATUS.PROCESSING,
         started_at: new Date().toISOString(),
-        current_step: "initializing",
+        current_step: JOB_STEPS.INITIALIZING,
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
@@ -217,10 +218,10 @@ export class JobProcessorV2 {
     const { error } = await supabase
       .from("generation_jobs")
       .update({
-        status: "completed",
+        status: JOB_STATUS.COMPLETED,
         completed_at: new Date().toISOString(),
         progress: 100,
-        current_step: "completed",
+        current_step: JOB_STEPS.COMPLETED,
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
@@ -239,7 +240,7 @@ export class JobProcessorV2 {
     const { error: updateError } = await supabase
       .from("generation_jobs")
       .update({
-        status: "failed",
+        status: JOB_STATUS.FAILED,
         error_message: error.message,
         updated_at: new Date().toISOString(),
       })

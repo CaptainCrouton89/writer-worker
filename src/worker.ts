@@ -1,6 +1,7 @@
 import { JobProcessorV2 } from "./job-processor-v2.js";
 import { supabase } from "./lib/supabase.js";
 import { GenerationJob, WorkerConfig } from "./lib/types.js";
+import { JOB_STATUS, CHAPTER_GENERATION_STATUS, JOB_STEPS } from "./lib/constants/status.js";
 
 const config: WorkerConfig = {
   pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || "5000"),
@@ -51,7 +52,7 @@ async function pollAndProcessJobs(processor: JobProcessorV2) {
     const { data: jobs, error } = await supabase
       .from("generation_jobs")
       .select("*")
-      .eq("status", "pending")
+      .eq("status", JOB_STATUS.PENDING)
       .order("created_at", { ascending: true })
       .limit(config.workerConcurrency);
 
@@ -91,7 +92,7 @@ async function cleanupOrphanedChapters() {
         content
       `
       )
-      .eq("generation_status", "generating");
+      .eq("generation_status", CHAPTER_GENERATION_STATUS.GENERATING);
 
     if (queryError) {
       console.error("❌ Error querying orphaned chapters:", queryError);
@@ -117,7 +118,7 @@ async function cleanupOrphanedChapters() {
         .from("generation_jobs")
         .select("id, status, current_step")
         .eq("chapter_id", chapter.id)
-        .in("status", ["pending", "processing"]);
+        .in("status", [JOB_STATUS.PENDING, JOB_STATUS.PROCESSING]);
 
       if (jobQueryError) {
         console.error(
@@ -134,7 +135,7 @@ async function cleanupOrphanedChapters() {
 
         // Check if jobs are stuck in processing (likely from worker restart)
         const stuckJobs = activeJobs.filter(
-          (job) => job.status === "processing"
+          (job) => job.status === JOB_STATUS.PROCESSING
         );
 
         if (stuckJobs.length > 0) {
@@ -147,8 +148,8 @@ async function cleanupOrphanedChapters() {
             const { error: resetError } = await supabase
               .from("generation_jobs")
               .update({
-                status: "pending",
-                current_step: "initializing",
+                status: JOB_STATUS.PENDING,
+                current_step: JOB_STEPS.INITIALIZING,
                 updated_at: new Date().toISOString(),
               })
               .eq("id", stuckJob.id);
@@ -225,9 +226,9 @@ async function cleanupOrphanedChapters() {
             sequence_id: chapterWithSequence.sequence_id,
             chapter_id: chapter.id,
             user_id: (chapterWithSequence.sequences as any).created_by,
-            status: "pending",
+            status: JOB_STATUS.PENDING,
             progress: 0,
-            current_step: shouldResume ? "resuming" : "initializing",
+            current_step: shouldResume ? JOB_STEPS.RESUMING : JOB_STEPS.INITIALIZING,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           });
@@ -253,7 +254,7 @@ async function cleanupOrphanedChapters() {
         const { error: updateError } = await supabase
           .from("chapters")
           .update({
-            generation_status: "failed",
+            generation_status: CHAPTER_GENERATION_STATUS.FAILED,
             updated_at: new Date().toISOString(),
           })
           .eq("id", chapter.id);

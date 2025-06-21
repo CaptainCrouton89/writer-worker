@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { supabase } from "./lib/supabase.js";
+import { HEALTH_STATUS, JOB_STATUS } from "./lib/constants/status.js";
 
 const app = express();
 const PORT = process.env.PORT || 3951;
@@ -25,7 +26,7 @@ app.get("/health", async (req, res) => {
     }
 
     res.json({
-      status: "healthy",
+      status: HEALTH_STATUS.HEALTHY,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: "connected",
@@ -35,7 +36,7 @@ app.get("/health", async (req, res) => {
   } catch (error) {
     console.error("Health check failed:", error);
     res.status(500).json({
-      status: "unhealthy",
+      status: HEALTH_STATUS.UNHEALTHY,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: "disconnected",
@@ -66,22 +67,22 @@ app.get("/metrics", async (req, res) => {
     const { data: pendingJobs, error: pendingError } = await supabase
       .from("generation_jobs")
       .select("count", { count: "exact" })
-      .eq("status", "pending");
+      .eq("status", JOB_STATUS.PENDING);
 
     const { data: processingJobs, error: processingError } = await supabase
       .from("generation_jobs")
       .select("count", { count: "exact" })
-      .eq("status", "processing");
+      .eq("status", JOB_STATUS.PROCESSING);
 
     const { data: completedJobs, error: completedError } = await supabase
       .from("generation_jobs")
       .select("count", { count: "exact" })
-      .eq("status", "completed");
+      .eq("status", JOB_STATUS.COMPLETED);
 
     const { data: failedJobs, error: failedError } = await supabase
       .from("generation_jobs")
       .select("count", { count: "exact" })
-      .eq("status", "failed");
+      .eq("status", JOB_STATUS.FAILED);
 
     if (pendingError || processingError || completedError || failedError) {
       throw new Error("Failed to fetch job metrics");
