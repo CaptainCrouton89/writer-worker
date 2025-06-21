@@ -277,7 +277,7 @@ export type Database = {
           title: string | null
           trigger_warnings: string[]
           updated_at: string | null
-          user_prompt_history: Json | null
+          user_prompt_history: Json
         }
         Insert: {
           chapters?: Json | null
@@ -292,7 +292,7 @@ export type Database = {
           title?: string | null
           trigger_warnings?: string[]
           updated_at?: string | null
-          user_prompt_history?: Json | null
+          user_prompt_history?: Json
         }
         Update: {
           chapters?: Json | null
@@ -307,7 +307,7 @@ export type Database = {
           title?: string | null
           trigger_warnings?: string[]
           updated_at?: string | null
-          user_prompt_history?: Json | null
+          user_prompt_history?: Json
         }
         Relationships: []
       }

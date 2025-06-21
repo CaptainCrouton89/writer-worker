@@ -84,7 +84,7 @@
 | title | `string | null` |
 | trigger_warnings | `string[]` |
 | updated_at | `string | null` |
-| user_prompt_history | `Json | null` |
+| user_prompt_history | `Json` |
 
 ## user_preferences
 

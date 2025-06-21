@@ -141,6 +141,12 @@ export class JobProcessorV2 {
   private async generateAndSaveEmbedding(sequence: Sequence): Promise<void> {
     console.log(`🔍 Generating outline embedding`);
 
+    if (!sequence.user_prompt_history || sequence.user_prompt_history.length === 0) {
+      throw new Error(`Sequence ${sequence.id} has no user prompt history`);
+    }
+
+    const latestPrompt = sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
+
     const outlineText = `
     ${sequence.title}
     ${sequence.description}
@@ -148,11 +154,11 @@ export class JobProcessorV2 {
     Trigger Warnings${sequence.trigger_warnings.join(", ")}
     Sexually Explicit: ${sequence.is_sexually_explicit}
     Eroticism: ${
-      ["Low", "Medium", "High"][sequence.user_prompt_history[0].spice_level]
+      ["Low", "Medium", "High"][latestPrompt.spice_level]
     }
     Story Length: ${
       ["Short Story", "Novella", "Novel/Slow Burn"][
-        sequence.user_prompt_history[0].story_length
+        latestPrompt.story_length
       ]
     }`;
     const embeddingVector = await generateEmbedding(outlineText);
@@ -185,12 +191,18 @@ export class JobProcessorV2 {
       );
     }
 
+    if (!sequence.user_prompt_history || sequence.user_prompt_history.length === 0) {
+      throw new Error(`Sequence ${sequence.id} has no user prompt history`);
+    }
+
+    const latestPrompt = sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
+
     // Generate the chapter content
     const chapterContent = await generateChapter(
       job,
       chapterIndex,
-      sequence.user_prompt_history[0],
-      sequence.chapters,
+      latestPrompt,
+      chapters,
       previousChapterContent
     );
 
