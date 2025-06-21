@@ -1,31 +1,40 @@
 // Utility functions for working with story outlines
 
-import { StoryOutline, Chapter, ChapterBullet, Result } from "../types/generation.js";
+import {
+  Chapter,
+  PlotPoint,
+  Result,
+  StoryOutline,
+} from "../types/generation.js";
 
 // Utility function to convert outline to text for embedding
 export const outlineToText = (outline: StoryOutline): string => {
-  return outline.chapters
-    .map((chapter, index) => {
-      const chapterText = `Chapter ${index + 1}: ${chapter.name}`;
-      const bulletsText = chapter.bullets
-        .map((bullet, bulletIndex) => `${bulletIndex + 1}. ${bullet.text}`)
-        .join('\n');
-      return `${chapterText}\n${bulletsText}`;
-    })
-    .join('\n\n');
+  return (
+    outline.title +
+    "\n" +
+    outline.description +
+    "\n" +
+    outline.tags.join(", ") +
+    "\n" +
+    outline.trigger_warnings.join(", ") +
+    "\n" +
+    outline.is_sexually_explicit +
+    "\n" +
+    "Spice Level: " +
+    ["Tease", "Steam", "Spicy"][outline.spiceLevel] +
+    "\n" +
+    ["Short Story", "Novella", "Novel/Slow Burn"][outline.storyLength]
+  );
 };
 
-export const parseOutlineResponse = (
-  response: string
-): Result<StoryOutline> => {
+export const parseOutlineResponse = (response: string): Chapter[] => {
   try {
     const lines = response
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
     const chapters: Chapter[] = [];
-    let currentChapter: { name: string; bullets: ChapterBullet[] } | null =
-      null;
+    let currentChapter: { name: string; plotPoints: PlotPoint[] } | null = null;
 
     for (const line of lines) {
       const chapterMatch = line.match(/^Chapter\s+\d+:\s*(.+)$/i);
@@ -34,28 +43,26 @@ export const parseOutlineResponse = (
         if (currentChapter) {
           chapters.push({
             name: currentChapter.name,
-            bullets: currentChapter.bullets,
+            plotPoints: currentChapter.plotPoints,
           });
         }
 
         currentChapter = {
           name: chapterMatch[1].trim(),
-          bullets: [],
+          plotPoints: [],
         };
       } else if (line.startsWith("-") && currentChapter) {
         const bulletText = line.replace(/^-\s*/, "").trim();
         if (bulletText) {
-          currentChapter.bullets.push({
+          currentChapter.plotPoints.push({
             text: bulletText,
-            index: currentChapter.bullets.length,
           });
         }
       } else if (line.match(/^[•*]\s+/) && currentChapter) {
         const bulletText = line.replace(/^[•*]\s*/, "").trim();
         if (bulletText) {
-          currentChapter.bullets.push({
+          currentChapter.plotPoints.push({
             text: bulletText,
-            index: currentChapter.bullets.length,
           });
         }
       }
@@ -64,41 +71,34 @@ export const parseOutlineResponse = (
     if (currentChapter) {
       chapters.push({
         name: currentChapter.name,
-        bullets: currentChapter.bullets,
+        plotPoints: currentChapter.plotPoints,
       });
     }
 
     if (chapters.length === 0) {
-      return { success: false, error: "No chapters found in response" };
+      throw new Error("No chapters found in response");
     }
 
-    return {
-      success: true,
-      data: { chapters: chapters as readonly Chapter[] },
-    };
+    return chapters;
   } catch (error) {
-    return {
-      success: false,
-      error: `Failed to parse outline: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
+    throw new Error(`Failed to parse outline: ${error}`);
   }
 };
 
-export const extractChapterByIndex = (outline: StoryOutline, chapterIndex: number): Result<Chapter> => {
+export const extractChapterByIndex = (
+  outline: StoryOutline,
+  chapterIndex: number
+): Result<Chapter> => {
   if (outline.chapters.length === 0) {
     return { success: false, error: "No chapters available" };
   }
 
   if (chapterIndex < 0 || chapterIndex >= outline.chapters.length) {
-    return { success: false, error: `Chapter index ${chapterIndex} is out of bounds. Available chapters: ${outline.chapters.length}` };
+    return {
+      success: false,
+      error: `Chapter index ${chapterIndex} is out of bounds. Available chapters: ${outline.chapters.length}`,
+    };
   }
 
   return { success: true, data: outline.chapters[chapterIndex] };
-};
-
-// Keep backward compatibility
-export const extractFirstChapter = (outline: StoryOutline): Result<Chapter> => {
-  return extractChapterByIndex(outline, 0);
 };

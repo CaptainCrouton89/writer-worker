@@ -1,33 +1,23 @@
 // Types and interfaces for story generation
-
-export interface UserPreferences {
-  readonly selectedSettings: readonly string[];
-  readonly selectedPlots: readonly string[];
-  readonly selectedThemes: readonly string[];
-  readonly customSetting?: string;
-  readonly customPlot?: string;
-  readonly customThemes?: string;
-  readonly spiceLevel: number; // 0=Tease, 1=Steamy, 2=Spicy hot
-  readonly storyLength: number; // 0=Short story, 1=Novella, 2=Slow burn
-}
-
-export interface ChapterBullet {
+export interface PlotPoint {
   readonly text: string;
-  readonly index: number;
 }
 
 export interface Chapter {
   readonly name: string;
-  readonly bullets: readonly ChapterBullet[];
+  readonly plotPoints: readonly PlotPoint[];
 }
 
 export interface StoryOutline {
+  readonly title: string;
+  readonly description: string;
+  readonly user_prompt: string;
   readonly chapters: readonly Chapter[];
-  readonly title?: string;
-  readonly description?: string;
-  readonly tags?: readonly string[];
-  readonly trigger_warnings?: readonly string[];
-  readonly is_sexually_explicit?: boolean;
+  readonly tags: readonly string[];
+  readonly trigger_warnings: readonly string[];
+  readonly is_sexually_explicit: boolean;
+  readonly spiceLevel: number; // 0: Tease, 1: Steamy, 2: Spicy hot
+  readonly storyLength: number; // 0: Short story, 1: Novella, 2: Novel
 }
 
 export type Result<T, E = string> =

@@ -1,34 +1,6 @@
-// AI client wrapper for generation
-
 import { google } from "@ai-sdk/google";
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import { z } from "zod";
-import { Result } from "../types/generation.js";
-
-// AI interaction function
-export const callAI = async (
-  prompt: string,
-  temperature: number = 0.7,
-  system?: string
-): Promise<Result<string>> => {
-  try {
-    const { text } = await generateText({
-      model: google("gemini-2.5-pro"),
-      prompt,
-      system,
-      temperature,
-    });
-
-    return { success: true, data: text.replace(/^Of course, here it is:/, "") };
-  } catch (error) {
-    return {
-      success: false,
-      error: `AI generation failed: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
-  }
-};
 
 // Schema for sequence metadata
 const SequenceMetadataSchema = z.object({
@@ -55,35 +27,9 @@ const SequenceMetadataSchema = z.object({
 
 // Generate sequence title and description
 export const generateSequenceMetadata = async (
-  outline: string,
-  preferences: {
-    spiceLevel: number;
-    selectedSettings: readonly string[];
-    selectedPlots: readonly string[];
-    selectedThemes: readonly string[];
-  },
-  temperature: number = 0.2
-): Promise<
-  Result<{
-    title: string;
-    description: string;
-    tags: string[];
-    trigger_warnings: string[];
-    is_sexually_explicit: boolean;
-  }>
-> => {
-  try {
-    const spiceLabels = ["Tease", "Steamy", "Spicy hot"];
-    const spiceLevel = spiceLabels[preferences.spiceLevel] || "Steamy";
-
-    const settings =
-      preferences.selectedSettings.join(", ") || "contemporary setting";
-    const plots =
-      preferences.selectedPlots.join(", ") || "forbidden attraction";
-    const themes =
-      preferences.selectedThemes.join(", ") || "passion and desire";
-
-    const prompt = `Based on this story outline, generate a compelling title, 2-sentence description, relevant tags, trigger warnings, and content rating for a ${spiceLevel.toLowerCase()} romance story set in ${settings}, featuring ${plots} and exploring themes of ${themes}.
+  outline: string
+): Promise<z.infer<typeof SequenceMetadataSchema>> => {
+  const prompt = `Based on this story outline, generate a compelling title, 2-sentence description, relevant tags, trigger warnings, and content rating for this story.
 
 Story Outline:
 ${outline}
@@ -92,7 +38,7 @@ ${outline}
 
 **Title**: Should be catchy and hint at the romantic/erotic nature without being too explicit.
 
-**Description**: Should entice readers by highlighting the main conflict, romantic tension, and what makes this story unique, while being appropriate for the ${spiceLevel} spice level.
+**Description**: Should entice readers by highlighting the main conflict, romantic tension, and what makes this story unique.
 
 **Tags**: Provide 5-8 lowercase string tags that categorize the story. Use common literature and erotica tags such as:
 - Genre tags: "contemporary", "historical", "fantasy", "paranormal", "military", "medical", "billionaire", "small town"
@@ -113,24 +59,14 @@ Only include warnings that are actually relevant to the story content.
 
 **Sexually Explicit Flag**: Determine if this is sexually explicit content:
 - TRUE: Contains graphic sexual descriptions, detailed intimate acts, explicit language about body parts/sexual acts
-- FALSE: Contains only romantic tension, kissing, fade-to-black scenes, or mild sensual content
+- FALSE: Contains only romantic tension, kissing, fade-to-black scenes, or mild sensual content`;
 
-Consider the ${spiceLevel} level: "Tease" is typically false, "Steamy" can be either, "Spicy hot" is typically true.`;
+  const { object } = await generateObject({
+    model: google("gemini-2.5-pro"),
+    prompt,
+    schema: SequenceMetadataSchema,
+    temperature: 0.2,
+  });
 
-    const { object } = await generateObject({
-      model: google("gemini-2.5-pro"),
-      prompt,
-      schema: SequenceMetadataSchema,
-      temperature,
-    });
-
-    return { success: true, data: object };
-  } catch (error) {
-    return {
-      success: false,
-      error: `Sequence metadata generation failed: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    };
-  }
+  return object;
 };

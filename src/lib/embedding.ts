@@ -24,35 +24,25 @@ interface EmbeddingResponse {
 export async function generateEmbedding(text: string): Promise<number[]> {
   const openAiKey = process.env.OPENAI_API_KEY;
 
-  if (!openAiKey) {
-    console.warn("OPENAI_API_KEY not found, falling back to zero vector");
+  const response = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openAiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "text-embedding-ada-002",
+      input: text.replaceAll("\n", " ").trim(),
+    }),
+  });
+
+  if (!response.ok) {
+    console.error("OpenAI API error:", response.status, response.statusText);
     return new Array(1536).fill(0);
   }
 
-  try {
-    const response = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openAiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "text-embedding-ada-002",
-        input: text.replaceAll("\n", " ").trim(),
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("OpenAI API error:", response.status, response.statusText);
-      return new Array(1536).fill(0);
-    }
-
-    const data = await response.json() as EmbeddingResponse;
-    return data.data[0]?.embedding || new Array(1536).fill(0);
-  } catch (error) {
-    console.error("Error generating embedding:", error);
-    return new Array(1536).fill(0);
-  }
+  const data = (await response.json()) as EmbeddingResponse;
+  return data.data[0]?.embedding || new Array(1536).fill(0);
 }
 
 /**
@@ -86,7 +76,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
       return texts.map(() => new Array(1536).fill(0));
     }
 
-    const data = await response.json() as EmbeddingResponse;
+    const data = (await response.json()) as EmbeddingResponse;
     return data.data.map((item) => item.embedding);
   } catch (error) {
     console.error("Error generating embeddings:", error);
