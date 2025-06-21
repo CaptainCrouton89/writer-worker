@@ -13,9 +13,9 @@ import {
 import { generateEmbedding } from "./lib/embedding.js";
 import { supabase } from "./lib/supabase.js";
 import { Tables } from "./lib/supabase/types.js";
-import { GenerationJob, Chapter } from "./lib/types.js";
-import { SequenceService } from "./services/sequence-service.js";
+import { Chapter, GenerationJob, Sequence } from "./lib/types.js";
 import { OutlineProcessor } from "./services/outline-processor.js";
+import { SequenceService } from "./services/sequence-service.js";
 
 export class JobProcessorV2 {
   private sequenceService: SequenceService;
@@ -39,7 +39,9 @@ export class JobProcessorV2 {
       }
 
       // Step 3: Fetch the sequence and chapter data
-      const sequence = await this.sequenceService.fetchSequence(job.sequence_id);
+      const sequence = await this.sequenceService.fetchSequence(
+        job.sequence_id
+      );
       const chapter = await fetchChapter(job.chapter_id);
       const chapterIndex = await getChapterIndex(job.chapter_id);
 
@@ -54,13 +56,19 @@ export class JobProcessorV2 {
       // Step 5: If outline was generated, save it and generate metadata
       if (outlineResult.wasGenerated) {
         await this.updateJobProgress(job.id, 25, "saving_outline");
-        await this.sequenceService.updateChapters(job.sequence_id, outlineResult.chapters);
+        await this.sequenceService.updateChapters(
+          job.sequence_id,
+          outlineResult.chapters
+        );
 
         await this.updateJobProgress(job.id, 30, "generating_metadata");
-        await this.generateAndSaveMetadata(job.sequence_id, outlineResult.chapters);
+        await this.generateAndSaveMetadata(
+          job.sequence_id,
+          outlineResult.chapters
+        );
 
         await this.updateJobProgress(job.id, 35, "generating_embedding");
-        await this.generateAndSaveEmbedding(job.sequence_id, outlineResult.chapters);
+        await this.generateAndSaveEmbedding(sequence);
 
         // Mark the prompt as processed if applicable
         if (outlineResult.processedPromptIndex !== undefined) {
@@ -77,7 +85,8 @@ export class JobProcessorV2 {
         job,
         chapter,
         chapterIndex,
-        outlineResult.chapters
+        outlineResult.chapters,
+        sequence
       );
 
       // Step 7: Complete the job
@@ -113,7 +122,9 @@ export class JobProcessorV2 {
     console.log(`🏷️ Generating metadata for sequence ${sequenceId}`);
 
     const outlineData = { chapters };
-    const metadata = await generateSequenceMetadata(JSON.stringify(outlineData));
+    const metadata = await generateSequenceMetadata(
+      JSON.stringify(outlineData)
+    );
     console.log(`✅ Generated metadata:`, metadata);
 
     await this.sequenceService.updateMetadata(sequenceId, {
@@ -127,28 +138,39 @@ export class JobProcessorV2 {
     console.log(`✅ Successfully saved metadata for sequence ${sequenceId}`);
   }
 
-  private async generateAndSaveEmbedding(
-    sequenceId: string,
-    chapters: Chapter[]
-  ): Promise<void> {
+  private async generateAndSaveEmbedding(sequence: Sequence): Promise<void> {
     console.log(`🔍 Generating outline embedding`);
 
-    const outlineText = JSON.stringify({ chapters });
+    const outlineText = `
+    ${sequence.title}
+    ${sequence.description}
+    Tags: ${sequence.tags.join(", ")}
+    Trigger Warnings${sequence.trigger_warnings.join(", ")}
+    Sexually Explicit: ${sequence.is_sexually_explicit}
+    Eroticism: ${
+      ["Low", "Medium", "High"][sequence.user_prompt_history[0].spice_level]
+    }
+    Story Length: ${
+      ["Short Story", "Novella", "Novel/Slow Burn"][
+        sequence.user_prompt_history[0].story_length
+      ]
+    }`;
     const embeddingVector = await generateEmbedding(outlineText);
 
     await this.sequenceService.updateEmbedding(
-      sequenceId,
-      embeddingVector.toString()
+      sequence.id,
+      JSON.stringify(embeddingVector)
     );
 
-    console.log(`✅ Successfully saved embedding for sequence ${sequenceId}`);
+    console.log(`✅ Successfully saved embedding for sequence ${sequence.id}`);
   }
 
   private async generateChapterContent(
     job: GenerationJob,
     chapter: Tables<"chapters">,
     chapterIndex: number,
-    chapters: Chapter[]
+    chapters: Chapter[],
+    sequence: Sequence
   ): Promise<void> {
     console.log(`✍️ Generating content for chapter ${chapterIndex + 1}`);
 
@@ -163,20 +185,12 @@ export class JobProcessorV2 {
       );
     }
 
-    // Build the outline structure expected by generateChapter
-    const outlineStructure = {
-      chapters,
-      user_prompt: "",
-      story_length: 0,
-      user_tags: [],
-      spice_level: 1,
-    };
-
     // Generate the chapter content
     const chapterContent = await generateChapter(
       job,
       chapterIndex,
-      outlineStructure,
+      sequence.user_prompt_history[0],
+      sequence.chapters,
       previousChapterContent
     );
 
@@ -220,7 +234,10 @@ export class JobProcessorV2 {
       .eq("id", jobId);
 
     if (updateError) {
-      console.error(`Failed to update failed job status for ${jobId}:`, updateError);
+      console.error(
+        `Failed to update failed job status for ${jobId}:`,
+        updateError
+      );
       throw new Error(`Failed to update job ${jobId}: ${updateError.message}`);
     }
   }

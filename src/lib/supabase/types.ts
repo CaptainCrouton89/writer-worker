@@ -205,7 +205,6 @@ export type Database = {
       }
       generation_jobs: {
         Row: {
-          bullet_progress: number | null
           chapter_id: string
           completed_at: string | null
           created_at: string | null
@@ -220,7 +219,6 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          bullet_progress?: number | null
           chapter_id: string
           completed_at?: string | null
           created_at?: string | null
@@ -235,7 +233,6 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          bullet_progress?: number | null
           chapter_id?: string
           completed_at?: string | null
           created_at?: string | null

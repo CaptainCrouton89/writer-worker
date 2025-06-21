@@ -115,7 +115,7 @@ async function cleanupOrphanedChapters() {
       // Check if there are any active jobs for this chapter
       const { data: activeJobs, error: jobQueryError } = await supabase
         .from("generation_jobs")
-        .select("id, status, bullet_progress, current_step")
+        .select("id, status, current_step")
         .eq("chapter_id", chapter.id)
         .in("status", ["pending", "processing"]);
 
@@ -173,7 +173,7 @@ async function cleanupOrphanedChapters() {
 
       const { data: allJobs, error: allJobsError } = await supabase
         .from("generation_jobs")
-        .select("id, status, bullet_progress, current_step")
+        .select("id, status, current_step")
         .eq("chapter_id", chapter.id)
         .order("updated_at", { ascending: false })
         .limit(1);
@@ -225,7 +225,6 @@ async function cleanupOrphanedChapters() {
             sequence_id: chapterWithSequence.sequence_id,
             chapter_id: chapter.id,
             user_id: (chapterWithSequence.sequences as any).created_by,
-            bullet_progress: lastJob.bullet_progress || 0,
             status: "pending",
             progress: 0,
             current_step: shouldResume ? "resuming" : "initializing",
@@ -242,10 +241,6 @@ async function cleanupOrphanedChapters() {
           console.log(
             `🔄 Created ${shouldResume ? "resume" : "new"} job for chapter ${
               chapter.id
-            }${
-              lastJob.bullet_progress
-                ? ` from bullet ${lastJob.bullet_progress}`
-                : ""
             }`
           );
         }

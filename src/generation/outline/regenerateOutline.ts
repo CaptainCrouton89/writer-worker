@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { Chapter, UserPrompt, UserPromptHistory } from "../../lib/types";
+import { Chapter, UserPrompt } from "../../lib/types";
 import { StoryOutlineSchema } from "./types";
 
 const spiceGuidelines = [
@@ -100,7 +100,7 @@ Write the new outline, continuing where the old outline left off.
 
 export const regenerateOutline = async (
   userPrompt: string,
-  promptData: UserPromptHistory,
+  promptData: UserPrompt,
   existingChapters: Chapter[]
 ): Promise<Chapter[]> => {
   const outlineString = existingChapters
@@ -112,7 +112,7 @@ export const regenerateOutline = async (
     )
     .join("\n");
 
-  const system = systemPrompt(promptData[0], outlineString);
+  const system = systemPrompt(promptData, outlineString);
   console.log(system);
 
   const prompt = getPrompt(outlineString, userPrompt);

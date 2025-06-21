@@ -1,9 +1,9 @@
 import { supabase } from "../lib/supabase.js";
 import { Tables, Json } from "../lib/supabase/types.js";
-import { UserPromptHistory, Chapter } from "../lib/types.js";
+import { UserPromptHistory, Chapter, Sequence, UserPrompt } from "../lib/types.js";
 
 export class SequenceService {
-  async fetchSequence(sequenceId: string): Promise<Tables<"sequences">> {
+  async fetchSequence(sequenceId: string): Promise<Sequence> {
     const { data, error } = await supabase
       .from("sequences")
       .select("*")
@@ -18,7 +18,7 @@ export class SequenceService {
       throw new Error(`Sequence ${sequenceId} not found`);
     }
 
-    return data;
+    return data as Sequence;
   }
 
   async updateSequence(
@@ -38,13 +38,12 @@ export class SequenceService {
     }
   }
 
-  getUnprocessedPrompts(sequence: Tables<"sequences">): UserPromptHistory[] {
+  getUnprocessedPrompts(sequence: Sequence): UserPrompt[] {
     if (!sequence.user_prompt_history) {
       return [];
     }
 
-    const prompts = sequence.user_prompt_history as unknown as UserPromptHistory[];
-    return prompts.filter(prompt => !prompt.processed);
+    return sequence.user_prompt_history.filter(prompt => !prompt.processed);
   }
 
   async markPromptAsProcessed(
@@ -52,17 +51,23 @@ export class SequenceService {
     promptIndex: number
   ): Promise<void> {
     const sequence = await this.fetchSequence(sequenceId);
-    const prompts = (sequence.user_prompt_history || []) as unknown as UserPromptHistory[];
+    const prompts = sequence.user_prompt_history || [];
 
     if (promptIndex < 0 || promptIndex >= prompts.length) {
       throw new Error(`Invalid prompt index ${promptIndex}`);
     }
 
-    prompts[promptIndex] = {
-      ...prompts[promptIndex],
+    const currentPrompt = prompts[promptIndex];
+    const updatedPrompt: UserPrompt = {
+      prompt: currentPrompt.prompt,
+      tags: currentPrompt.tags,
+      spice_level: currentPrompt.spice_level,
+      story_length: currentPrompt.story_length,
+      insertion_chapter_index: currentPrompt.insertion_chapter_index,
       processed: true,
       processed_at: Date.now(),
     };
+    prompts[promptIndex] = updatedPrompt;
 
     await this.updateSequence(sequenceId, {
       user_prompt_history: prompts as unknown as Json,
@@ -78,11 +83,8 @@ export class SequenceService {
     });
   }
 
-  getChapters(sequence: Tables<"sequences">): Chapter[] {
-    if (!sequence.chapters) {
-      return [];
-    }
-    return sequence.chapters as unknown as Chapter[];
+  getChapters(sequence: Sequence): Chapter[] {
+    return sequence.chapters || [];
   }
 
   async updateMetadata(

@@ -1,23 +1,26 @@
-import { supabase } from "../../lib/supabase";
-import { GenerationJob } from "../../lib/types";
-import { generatePlotPoint } from "./plotPoint";
+import { supabase } from "../../lib/supabase.js";
+import { Chapter, GenerationJob, UserPrompt } from "../../lib/types.js";
+import { generatePlotPoint } from "./plotPoint.js";
+
+interface StoryOutline {}
 
 export const generateChapter = async (
   job: GenerationJob,
   chapterIndex: number,
-  outline: StoryOutline,
+  userPrompt: UserPrompt,
+  chapters: Chapter[],
   previousChapterContent: string
 ): Promise<string> => {
-  const chapter = outline.chapters?.[chapterIndex];
+  const chapter = chapters[chapterIndex];
 
   if (!chapter) {
-    throw new Error(`Chapter ${chapterIndex} not found in outline`);
+    throw new Error(`Chapter ${chapterIndex + 1} not found in outline`);
   }
 
   let chapterContent = "";
 
   if (!chapter.plotPoints) {
-    throw new Error(`Chapter ${chapterIndex} has no plot points`);
+    throw new Error(`Chapter ${chapterIndex + 1} has no plot points`);
   }
 
   const totalPlotPoints = chapter.plotPoints.length;
@@ -36,9 +39,8 @@ export const generateChapter = async (
 
     // Generate content for this plot point
     const plotPointContent = await generatePlotPoint(
-      outline.story_length,
-      outline.spice_level,
-      outline,
+      userPrompt,
+      chapters,
       chapterIndex,
       plotPointIndex,
       previousChapterContent,
@@ -54,7 +56,6 @@ export const generateChapter = async (
       .from("generation_jobs")
       .update({
         progress: 40 + 0.6 * plotPointProgress,
-        bullet_progress: plotPointProgress,
         updated_at: new Date().toISOString(),
       })
       .eq("id", job.id);

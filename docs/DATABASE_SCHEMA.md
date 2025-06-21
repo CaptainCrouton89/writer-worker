@@ -55,7 +55,6 @@
 
 | Field | Type |
 |-------|------|
-| bullet_progress | `number | null` |
 | chapter_id | `string` |
 | completed_at | `string | null` |
 | created_at | `string | null` |

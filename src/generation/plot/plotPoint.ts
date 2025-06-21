@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { Chapter } from "../../lib/types";
+import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
+import { Chapter, UserPrompt } from "../../lib/types.js";
 
 const getIntroduction = (
   firstChapter: boolean,
@@ -108,7 +108,7 @@ ${chapters
   .map(
     (chapter, index) =>
       `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
-        .map((plotPoint) => `- ${plotPoint.text}`)
+        .map((plotPoint) => `- ${plotPoint}`)
         .join("\n")}`
   )
   .join("\n")}
@@ -117,7 +117,7 @@ ${chapters
 <chapter_outline>
 ## Chapter ${chapterIndex + 1}: ${chapters[chapterIndex].name}
 ${chapters[chapterIndex].plotPoints
-  .map((plotPoint) => `- ${plotPoint.text}`)
+  .map((plotPoint) => `- ${plotPoint}`)
   .join("\n")}
 </chapter_outline>
 
@@ -126,48 +126,51 @@ ${previousChapterContent}
 </preceeding_content>
 
 Continue the story from it was left off. Write the content for the plot point: "${
-  chapters[chapterIndex].plotPoints[plotPointIndex].text
+  chapters[chapterIndex].plotPoints[plotPointIndex]
 }". Aim for ${
   lengthGuidelines[length]
 } of content. Do not continue the story further than this plot point, so as to let the story continue smoothly when the next plot point is written. Do not include any introduction or preamble in your response; only write the content requested.
 `;
 
 export const generatePlotPoint = async (
-  length: number,
-  spiceLevel: number,
-  outline: Chapter[],
+  userPrompt: UserPrompt,
+  chapters: Chapter[],
   chapterIndex: number,
   plotPointIndex: number,
   previousChapterContent: string,
   chapterContentSoFar: string
 ): Promise<string> => {
-  if (length == null || length < 0 || length >= STORY_LENGTH_CONFIG.length) {
-    throw new Error(`Invalid story length: ${length}. Must be 0, 1, or 2.`);
+  if (
+    userPrompt.story_length == null ||
+    userPrompt.story_length < 0 ||
+    userPrompt.story_length >= STORY_LENGTH_CONFIG.length
+  ) {
+    throw new Error(
+      `Invalid story length: ${userPrompt.story_length}. Must be 0, 1, or 2.`
+    );
   }
   const contentSoFar = `${previousChapterContent}\n\n## Chapter ${
     chapterIndex + 1
-  }: ${outline.chapters?.[chapterIndex].name}\n\n${chapterContentSoFar}`;
+  }: ${chapters[chapterIndex].name}\n\n${chapterContentSoFar}`;
 
   const truncatedContentSoFar = contentSoFar.slice(-8000);
 
   const system = systemPrompt(
-    length,
-    spiceLevel,
+    userPrompt.story_length,
+    userPrompt.spice_level,
     chapterIndex === 0,
     plotPointIndex === 0,
     plotPointIndex > 0 &&
-      plotPointIndex <
-        (outline.chapters?.[chapterIndex].plotPoints.length ?? 0) - 1,
-    plotPointIndex ===
-      (outline.chapters?.[chapterIndex].plotPoints.length ?? 0) - 1
+      plotPointIndex < chapters[chapterIndex].plotPoints.length - 1,
+    plotPointIndex === chapters[chapterIndex].plotPoints.length - 1
   );
 
   console.log(system);
 
   const prompt = getPrompt(
-    length,
-    outline.user_prompt,
-    outline.chapters as Chapter[],
+    userPrompt.story_length,
+    userPrompt.prompt,
+    chapters,
     chapterIndex,
     plotPointIndex,
     truncatedContentSoFar
