@@ -77,7 +77,7 @@ export const generateChapter = async (
         .from("chapters")
         .update({
           content: chapterContent,
-          generation_progress: ((plotPointIndex + 1) / totalPlotPoints) * 100,
+          generation_progress: Math.round(((plotPointIndex + 1) / totalPlotPoints) * 100),
           generation_status:
             plotPointIndex + 1 === totalPlotPoints
               ? CHAPTER_GENERATION_STATUS.COMPLETED
