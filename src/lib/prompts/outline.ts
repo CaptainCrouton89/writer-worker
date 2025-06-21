@@ -22,27 +22,27 @@ export const buildOutlineSystemPrompt = (
     ];
 
   const spiceGuidelines = {
-    Tease: `- Build romantic tension gradually throughout the story arc
-- Start with emotional connection, longing glances, and subtle chemistry
-- Progress slowly through light physical contact (hand touches, brief embraces)
+    Tease: `- Build romantic tension very gradually throughout the story arc
+- Start with character establishment and non-romantic interactions
+- Progress slowly through friendship, then attraction, then light physical contact
 - Peak intensity should focus on passionate kissing and sensual moments that imply intimacy
-- Emphasize the emotional journey and slow-burn connection between characters`,
+- Emphasize the emotional journey and slow-burn connection - romance should not dominate early chapters`,
     Steamy: `- Build sexual tension progressively from emotional connection to physical intimacy
-- Early chapters: Focus on romantic chemistry, flirtation, and building attraction
+- Early chapters: Focus on character development and plot with subtle romantic undertones
 - Mid-story: Include passionate kissing, touching, and moderate sexual tension
 - Later chapters: Feature moderately explicit romantic encounters with emotional depth
-- Balance the emotional and physical aspects throughout the progression`,
-    "Spicy hot": `- Start with strong attraction and chemistry, building to explicit encounters
-- Early chapters: Establish intense sexual tension and desire between characters
+- Allow proper time for relationship development before intimate moments`,
+    "Spicy hot": `- Build attraction and chemistry gradually, ramping to explicit encounters
+- Early chapters: Establish characters and plot with underlying sexual tension
 - Mid-story: Include passionate encounters with increasing sexual content
-- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions
-- Maintain character development alongside the sexual progression`,
+- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
+- Maintain character development alongside the sexual progression with proper pacing`,
   };
 
   const bulletExamples = {
-    Tease: `Chapter 3 example: Sarah and Marcus walk to her car after their coffee date, their conversation growing intimate under the streetlight before he gently touches her arm, creating an electric moment where they stand closer than necessary and finally acknowledge their growing feelings.`,
-    Steamy: `Chapter 4 example: Emma and Chef Rodriguez find themselves alone after cooking class, their professional dynamic shifting as he guides her technique from behind, the physical proximity building tension until their first passionate kiss ignites against the kitchen counter.`,
-    "Spicy hot": `Chapter 6 example: After months of building attraction, Veronica and her business rival finally confront their desire during a late office meeting, their professional argument dissolving into passionate intimacy as they give in to the explosive chemistry they've been fighting.`,
+    Tease: `Early story chapter example: Sarah and Marcus walk to her car after their coffee date. They discuss work projects. Marcus offers to help with her presentation.`,
+    Steamy: `Middle of the story chapter example: Emma and Chef Rodriguez find themselves alone after cooking class, their professional dynamic shifting as he guides her technique from behind, the physical proximity building tension until their first passionate kiss ignites against the kitchen counter.`,
+    "Spicy hot": `Late story chapter example: After months of building attraction, Veronica and her business rival finally confront their desire during a late office meeting, their professional argument dissolving into passionate intimacy as they give in to the explosive chemistry they've been fighting.`,
   };
 
   return `You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc.
@@ -59,20 +59,19 @@ ${spiceGuidelines[spiceLevel]}
 - Each plot point should generate approximately ${
     config.pagesPerBullet
   } pages of content
-- Build romantic/sexual tension progressively throughout the story - start low and build up
-- Early chapters should focus more on emotional connection and chemistry
+- Build romantic/sexual tension very gradually throughout the story - start with non-romantic interactions
+- Early chapters should focus primarily on character establishment and plot setup with minimal romance
+- Romance should develop slowly over multiple chapters before any intimate moments
 - Later chapters should contain the peak intensity for the chosen spice level
 - Include both character development and relationship progression
 </story_structure>
 
 <bullet_point_style>
-Write detailed, scene-specific bullet points that are 2-3 sentences long. Each should:
-- Describe a specific scene, location, or event
-- Include emotional beats and character motivations  
-- Specify the romantic/sexual content level appropriate for ${spiceDescriptor}
-- Provide enough detail to generate substantial content
+Write concise bullet points that are 1-2 sentences long. Each should:
+- Build romance very gradually - most early chapters should focus on non-romantic interactions
+- Provide concrete story events that can be expanded into detailed content
 
-Example of appropriate chapter placement and within-chapter progression for ${spiceDescriptor} stories:
+Keep bullets sparse, so as to be most useful for a writer to expand into detailed content later. Example style for ${spiceDescriptor} stories:
 ${bulletExamples[spiceLevel]}
 </bullet_point_style>
 
