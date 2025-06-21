@@ -98,14 +98,13 @@ Write the new outline, continuing where the old outline left off.
 
 export const regenerateOutline = async (
   job: GenerationJob,
+  outlineBefore: StoryOutline,
   chapterIndex: number
 ): Promise<string> => {
   const storyOutline = job.story_outline! as unknown as StoryOutline;
   if (!storyOutline.chapters) {
     throw new Error("No chapters found in story outline");
   }
-
-  const outlineBefore = storyOutline.chapters?.slice(0, chapterIndex);
 
   const system = systemPrompt(
     storyOutline,
@@ -136,6 +135,10 @@ export const regenerateOutline = async (
     return text.replace(/^Of course, here it is:/, "");
   } catch (error) {
     console.error("❌ Failed to regenerate outline:", error);
-    throw new Error(`Outline regeneration failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Outline regeneration failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 };

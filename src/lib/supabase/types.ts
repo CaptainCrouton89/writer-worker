@@ -216,10 +216,8 @@ export type Database = {
           sequence_id: string | null
           started_at: string | null
           status: string
-          story_outline: Json | null
           updated_at: string | null
           user_id: string | null
-          user_prompt: string | null
         }
         Insert: {
           bullet_progress?: number | null
@@ -233,10 +231,8 @@ export type Database = {
           sequence_id?: string | null
           started_at?: string | null
           status?: string
-          story_outline?: Json | null
           updated_at?: string | null
           user_id?: string | null
-          user_prompt?: string | null
         }
         Update: {
           bullet_progress?: number | null
@@ -250,10 +246,8 @@ export type Database = {
           sequence_id?: string | null
           started_at?: string | null
           status?: string
-          story_outline?: Json | null
           updated_at?: string | null
           user_id?: string | null
-          user_prompt?: string | null
         }
         Relationships: [
           {
@@ -274,6 +268,7 @@ export type Database = {
       }
       sequences: {
         Row: {
+          chapters: Json | null
           created_at: string | null
           created_by: string
           description: string | null
@@ -282,10 +277,13 @@ export type Database = {
           is_sexually_explicit: boolean
           name: string | null
           tags: string[]
+          title: string | null
           trigger_warnings: string[]
           updated_at: string | null
+          user_prompt_history: Json | null
         }
         Insert: {
+          chapters?: Json | null
           created_at?: string | null
           created_by: string
           description?: string | null
@@ -294,10 +292,13 @@ export type Database = {
           is_sexually_explicit?: boolean
           name?: string | null
           tags?: string[]
+          title?: string | null
           trigger_warnings?: string[]
           updated_at?: string | null
+          user_prompt_history?: Json | null
         }
         Update: {
+          chapters?: Json | null
           created_at?: string | null
           created_by?: string
           description?: string | null
@@ -306,8 +307,10 @@ export type Database = {
           is_sexually_explicit?: boolean
           name?: string | null
           tags?: string[]
+          title?: string | null
           trigger_warnings?: string[]
           updated_at?: string | null
+          user_prompt_history?: Json | null
         }
         Relationships: []
       }

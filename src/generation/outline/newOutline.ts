@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { generateObject, generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
+import { Chapter } from "../../lib/types/generation";
 
 const spiceGuidelines = [
   `
@@ -98,7 +99,7 @@ export const generateNewOutline = async (storyOutline: {
   story_length: number;
   user_tags: string[];
   spice_level: number;
-}): Promise<string> => {
+}): Promise<Chapter[]> => {
   const system = systemPrompt({
     spiceLevel: storyOutline.spice_level,
     storyLength: storyOutline.story_length,
@@ -113,16 +114,21 @@ export const generateNewOutline = async (storyOutline: {
 
   try {
     console.log("🔮 Generating new story outline with Gemini");
-    const { text } = await generateText({
+    const { object } = await generateObject({
       model: google("gemini-2.5-pro"),
       system,
       prompt,
+      schema: StoryOutlineSchema,
       temperature: 0.5,
     });
     console.log("✅ Successfully generated new outline");
-    return text.replace(/^Of course, here it is:/, "");
+    return object;
   } catch (error) {
     console.error("❌ Failed to generate new outline:", error);
-    throw new Error(`New outline generation failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `New outline generation failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 };
