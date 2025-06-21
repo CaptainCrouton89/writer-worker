@@ -29,7 +29,7 @@ const systemPrompt = (outline: StoryOutline, storyOutline: string) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to modify the outline provided by the user, incorporating the user's request into the plot and style of the story. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
-${spiceGuidelines[outline.spiceLevel]}
+${spiceGuidelines[outline.spice_level]}
 </story_guidelines>
 
 <old_outline>
@@ -37,17 +37,17 @@ ${storyOutline}
 </old_outline>
 
 <outline_structure>
-- The outline is for a ${STORY_LENGTH_CONFIG[outline.storyLength].type} story.
+- The outline is for a ${STORY_LENGTH_CONFIG[outline.story_length].type} story.
 - There should be a total of ${
-  STORY_LENGTH_CONFIG[outline.storyLength].chapterCount
+  STORY_LENGTH_CONFIG[outline.story_length].chapterCount
 } chapters
 - Each chapter should have exactly ${
-  STORY_LENGTH_CONFIG[outline.storyLength].bulletsPerChapter
+  STORY_LENGTH_CONFIG[outline.story_length].bulletsPerChapter
 } plot points
 - Each plot point should represent approximately ${
-  STORY_LENGTH_CONFIG[outline.storyLength].pagesPerBullet
+  STORY_LENGTH_CONFIG[outline.story_length].pagesPerBullet
 } pages of content, or about ${
-  STORY_LENGTH_CONFIG[outline.storyLength].wordTarget
+  STORY_LENGTH_CONFIG[outline.story_length].wordTarget
 }
 - Use good pacing, and follow typical story structure.
 </outline_structure>
@@ -101,7 +101,11 @@ export const regenerateOutline = async (
   chapterIndex: number
 ): Promise<string> => {
   const storyOutline = job.story_outline! as unknown as StoryOutline;
-  const outlineBefore = storyOutline.chapters.slice(0, chapterIndex);
+  if (!storyOutline.chapters) {
+    throw new Error("No chapters found in story outline");
+  }
+
+  const outlineBefore = storyOutline.chapters?.slice(0, chapterIndex);
 
   const { text } = await generateText({
     model: google("gemini-2.5-pro"),

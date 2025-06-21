@@ -9,7 +9,7 @@ export const generateChapter = async (
   outline: StoryOutline,
   previousChapterContent: string
 ): Promise<string> => {
-  const chapter = outline.chapters[chapterIndex];
+  const chapter = outline.chapters?.[chapterIndex];
 
   if (!chapter) {
     throw new Error(`Chapter ${chapterIndex} not found in outline`);
@@ -32,8 +32,8 @@ export const generateChapter = async (
 
     // Generate content for this plot point
     const plotPointContent = await generatePlotPoint(
-      outline.storyLength,
-      outline.spiceLevel,
+      outline.story_length,
+      outline.spice_level,
       outline,
       chapterIndex,
       plotPointIndex,

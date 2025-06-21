@@ -32,7 +32,7 @@ export class JobProcessor {
       const chapterIndex = await getChapterIndex(job.chapter_id);
 
       // Step 3: Handle outline logic
-      await this.updateJobProgress(job.id, 15, "checking_outline");
+      await this.updateJobProgress(job.id, 15, "outlining");
       const outline = await this.handleOutline(job, chapterIndex);
 
       // Step 4: Generate metadata if outline was created/updated
@@ -81,8 +81,8 @@ export class JobProcessor {
     const hasUserPrompt = !!job.user_prompt;
     const hasOutline =
       !!job.story_outline &&
-      !!(job.story_outline as unknown as StoryOutline).chapters &&
-      (job.story_outline as unknown as StoryOutline).chapters.length > 0;
+      !!job.story_outline.chapters &&
+      job.story_outline.chapters.length > 0;
 
     if (!hasOutline) {
       // Case 1: No outline exists - generate new one
@@ -102,11 +102,12 @@ export class JobProcessor {
   private async generateNewOutline(job: GenerationJob): Promise<StoryOutline> {
     console.log(`🔮 Generating new story outline`);
 
-    console.log(job);
-
-    const outlineString = await generateNewOutline(
-      job.story_outline as unknown as StoryOutline
-    );
+    const outlineString = await generateNewOutline({
+      user_prompt: job.story_outline.user_prompt,
+      story_length: job.story_outline.story_length,
+      user_tags: job.story_outline.user_tags as string[],
+      spice_level: (job.story_outline.spice_level as number) || 1,
+    });
 
     console.log(outlineString);
 

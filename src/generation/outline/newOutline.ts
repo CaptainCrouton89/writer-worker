@@ -1,7 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { StoryOutline } from "../../lib/types/generation";
 
 const spiceGuidelines = [
   `
@@ -24,7 +23,7 @@ const spiceGuidelines = [
 - Maintain character development alongside the sexual progression with proper pacing`,
 ];
 
-const systemPrompt = (outline: StoryOutline) => `
+const systemPrompt = (outline: { spiceLevel: number; storyLength: number }) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
@@ -75,7 +74,11 @@ Chapter 2: Chapter Title
 </output_format>
 `;
 
-const getPrompt = (outline: StoryOutline) => {
+const getPrompt = (outline: {
+  user_prompt: string;
+  story_length: number;
+  user_tags: string[];
+}) => {
   return `Write the outline for the following story:
 
 <story_description>
@@ -84,19 +87,34 @@ const getPrompt = (outline: StoryOutline) => {
 
   
 It is a ${
-    STORY_LENGTH_CONFIG[outline.storyLength].type
+    STORY_LENGTH_CONFIG[outline.story_length].type
   }, and should incorporate the following tags:
-${outline.tags.join(", ")}
+${outline.user_tags.join(", ")}
   `;
 };
 
-export const generateNewOutline = async (
-  storyOutline: StoryOutline
-): Promise<string> => {
+export const generateNewOutline = async (storyOutline: {
+  user_prompt: string;
+  story_length: number;
+  user_tags: string[];
+  spice_level: number;
+}): Promise<string> => {
+  const system = systemPrompt({
+    spiceLevel: storyOutline.spice_level,
+    storyLength: storyOutline.story_length,
+  });
+  console.log(system);
+  const prompt = getPrompt({
+    user_prompt: storyOutline.user_prompt,
+    story_length: storyOutline.story_length,
+    user_tags: storyOutline.user_tags as string[],
+  });
+  console.log(prompt);
+
   const { text } = await generateText({
     model: google("gemini-2.5-pro"),
-    system: systemPrompt(storyOutline),
-    prompt: getPrompt(storyOutline),
+    system,
+    prompt,
     temperature: 0.5,
   });
 

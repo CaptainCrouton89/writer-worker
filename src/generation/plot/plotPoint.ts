@@ -1,6 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
-import { StoryOutline } from "../../lib/types/generation";
+import { Chapter, StoryOutline } from "../../lib/types/generation";
 
 const getIntroduction = (
   firstChapter: boolean,
@@ -43,7 +43,9 @@ ${getIntroduction(
 You will be given the story outline, the chapter outline, and the story up until this point. You will need to write the content for the plot point, so that the story flows naturally.
 
 <romance_style_guidelines>
-# The user has elected to read a story at spiciness level of ${spiceLevel}/3. When the writing style is romantic or erotic, follow these guidelines:
+# The user has elected to read a story at spiciness level of ${
+  spiceLevel + 1
+}/3. When the writing style is romantic or erotic, follow these guidelines:
 ${spiceGuidelines[spiceLevel]}
 </romance_style_guidelines>
 
@@ -89,19 +91,20 @@ const lengthGuidelines = [
 
 const getPrompt = (
   length: number,
-  outline: StoryOutline,
+  userPrompt: string,
+  chapters: Chapter[],
   chapterIndex: number,
   plotPointIndex: number,
   previousChapterContent: string
 ) => `
 <story_outline>
 # Story Description
-${outline.user_prompt}
+${userPrompt}
 
-${outline.chapters
+${chapters
   .map(
-    (chapter) =>
-      `## Chapter ${chapterIndex + 1}: ${chapter.name}\n${chapter.plotPoints
+    (chapter, index) =>
+      `## Chapter ${index + 1}: ${chapter.name}\n${chapter.plotPoints
         .map((plotPoint) => `- ${plotPoint.text}`)
         .join("\n")}`
   )
@@ -109,8 +112,8 @@ ${outline.chapters
 </story_outline>
 
 <chapter_outline>
-## Chapter ${chapterIndex + 1}: ${outline.chapters[chapterIndex].name}
-${outline.chapters[chapterIndex].plotPoints
+## Chapter ${chapterIndex + 1}: ${chapters[chapterIndex].name}
+${chapters[chapterIndex].plotPoints
   .map((plotPoint) => `- ${plotPoint.text}`)
   .join("\n")}
 </chapter_outline>
@@ -120,7 +123,7 @@ ${previousChapterContent}
 </story_up_to_this_point>
 
 Continue the story from it was left off. Write the content for the plot point: "${
-  outline.chapters[chapterIndex].plotPoints[plotPointIndex].text
+  chapters[chapterIndex].plotPoints[plotPointIndex].text
 }". Aim for ${
   lengthGuidelines[length]
 } of content. Do not continue the story further than this plot point, so as to let the story continue smoothly when the next plot point is written. Do not include any introduction or preamble in your response; only write the content requested.
@@ -137,31 +140,39 @@ export const generatePlotPoint = async (
 ): Promise<string> => {
   const contentSoFar = `${previousChapterContent}\n## Chapter ${
     chapterIndex + 1
-  }:${outline.chapters[chapterIndex].name}\n---\n${chapterContentSoFar}`;
+  }:${outline.chapters?.[chapterIndex].name}\n---\n${chapterContentSoFar}`;
 
-  const truncatedContentSoFar =
-    contentSoFar.length > 8000 ? "..." : "" + contentSoFar.slice(-8000);
+  const truncatedContentSoFar = contentSoFar.slice(-8000);
+
+  const system = systemPrompt(
+    length,
+    spiceLevel,
+    chapterIndex === 0,
+    plotPointIndex === 0,
+    plotPointIndex > 0 &&
+      plotPointIndex <
+        (outline.chapters?.[chapterIndex].plotPoints.length ?? 0) - 1,
+    plotPointIndex ===
+      (outline.chapters?.[chapterIndex].plotPoints.length ?? 0) - 1
+  );
+
+  console.log(system);
 
   const prompt = getPrompt(
     length,
-    outline,
+    outline.user_prompt,
+    outline.chapters as Chapter[],
     chapterIndex,
     plotPointIndex,
     truncatedContentSoFar
   );
 
+  console.log(prompt);
+
   const { text } = await generateText({
     model: google("gemini-2.5-pro"),
     prompt,
-    system: systemPrompt(
-      length,
-      spiceLevel,
-      chapterIndex === 0,
-      plotPointIndex === 0,
-      plotPointIndex > 0 &&
-        plotPointIndex < outline.chapters[chapterIndex].plotPoints.length - 1,
-      plotPointIndex === outline.chapters[chapterIndex].plotPoints.length - 1
-    ),
+    system,
     temperature: 0.8,
   });
 

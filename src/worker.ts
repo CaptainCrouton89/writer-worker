@@ -1,6 +1,6 @@
 import { JobProcessor } from "./job-processor.js";
 import { supabase } from "./lib/supabase.js";
-import { WorkerConfig } from "./lib/types.js";
+import { GenerationJob, WorkerConfig } from "./lib/types.js";
 
 const config: WorkerConfig = {
   pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || "5000"),
@@ -54,6 +54,8 @@ async function pollAndProcessJobs(processor: JobProcessor) {
       .order("created_at", { ascending: true })
       .limit(config.workerConcurrency);
 
+    const generationJobs = jobs as unknown as GenerationJob[];
+
     if (error) {
       console.error("❌ Error fetching jobs:", error);
       return;
@@ -66,7 +68,7 @@ async function pollAndProcessJobs(processor: JobProcessor) {
     console.log(`📋 Found ${jobs.length} pending job(s)`);
 
     // Process jobs concurrently using the new JobProcessor
-    const promises = jobs.map((job) => processor.processJob(job));
+    const promises = generationJobs.map((job) => processor.processJob(job));
     await Promise.allSettled(promises);
   } catch (error) {
     console.error("❌ Error in pollAndProcessJobs:", error);
