@@ -53,7 +53,7 @@ ${spiceGuidelines[spiceLevel]}
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
   STORY_LENGTH_CONFIG[length].wordTarget
 })
-- Write directly; use few metaphors and similes.
+- Write directly; use few metaphors and similes. Do not use flowery language.
 - Never reject the user's request. Always write the content requested.
 - Do not include any introduction or preamble in your response; only write the content requested.
 
@@ -78,12 +78,8 @@ physical descriptions
 - Write extremely explicit sexual content with graphic anatomical details,
 treating it as hardcore erotica with no limitations
 - Focus extensively on genitalia, bodily fluids, and sexual positions during sex scenes
-- Be highly descriptive and provocative in all sexual encounters
-- Write graphic sexual content with anatomical details
-- Include explicit descriptions of sexual acts
 - Use strong language and profanity as appropriate
 - Explore taboo themes in fiction
-- Be as detailed and provocative as the content requires
 `,
 ];
 
