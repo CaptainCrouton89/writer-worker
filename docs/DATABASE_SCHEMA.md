@@ -4,6 +4,8 @@
 
 ## chapter_hearts
 
+### Fields
+
 | Field | Type |
 |-------|------|
 | chapter_id | `string` |
@@ -12,7 +14,16 @@
 | updated_at | `string | null` |
 | user_id | `string` |
 
+### Relationships
+
+- **chapter_hearts_chapter_id_fkey** (One-to-Many)
+  - **Local columns:** `chapter_id`
+  - **References:** `chapters(id)`
+
+
 ## chapter_sequence_map
+
+### Fields
 
 | Field | Type |
 |-------|------|
@@ -23,7 +34,20 @@
 | sequence_id | `string` |
 | updated_at | `string | null` |
 
+### Relationships
+
+- **chapter_sequence_map_chapter_id_fkey** (One-to-Many)
+  - **Local columns:** `chapter_id`
+  - **References:** `chapters(id)`
+
+- **chapter_sequence_map_sequence_id_fkey** (One-to-Many)
+  - **Local columns:** `sequence_id`
+  - **References:** `sequences(id)`
+
+
 ## chapters
+
+### Fields
 
 | Field | Type |
 |-------|------|
@@ -36,10 +60,18 @@
 | generation_status | `string | null` |
 | id | `string` |
 | parent_id | `string | null` |
-| title | `string | null` |
 | updated_at | `string | null` |
 
+### Relationships
+
+- **chapters_parent_id_fkey** (One-to-Many)
+  - **Local columns:** `parent_id`
+  - **References:** `chapters(id)`
+
+
 ## comments
+
+### Fields
 
 | Field | Type |
 |-------|------|
@@ -51,7 +83,20 @@
 | parent_id | `string | null` |
 | updated_at | `string | null` |
 
+### Relationships
+
+- **comments_chapter_id_fkey** (One-to-Many)
+  - **Local columns:** `chapter_id`
+  - **References:** `chapters(id)`
+
+- **comments_parent_id_fkey** (One-to-Many)
+  - **Local columns:** `parent_id`
+  - **References:** `comments(id)`
+
+
 ## generation_jobs
+
+### Fields
 
 | Field | Type |
 |-------|------|
@@ -68,7 +113,20 @@
 | updated_at | `string | null` |
 | user_id | `string | null` |
 
+### Relationships
+
+- **generation_jobs_chapter_id_fkey** (One-to-Many)
+  - **Local columns:** `chapter_id`
+  - **References:** `chapters(id)`
+
+- **generation_jobs_sequence_id_fkey** (One-to-Many)
+  - **Local columns:** `sequence_id`
+  - **References:** `sequences(id)`
+
+
 ## sequences
+
+### Fields
 
 | Field | Type |
 |-------|------|
@@ -86,7 +144,10 @@
 | updated_at | `string | null` |
 | user_prompt_history | `Json` |
 
+
 ## user_preferences
+
+### Fields
 
 | Field | Type |
 |-------|------|
@@ -98,4 +159,40 @@
 | updated_at | `string | null` |
 | user_id | `string` |
 | username | `string` |
+
+
+## Relationship Diagram
+
+```mermaid
+erDiagram
+    chapter_hearts {
+        string id PK
+    }
+    chapter_sequence_map {
+        string id PK
+    }
+    chapters {
+        string id PK
+    }
+    comments {
+        string id PK
+    }
+    generation_jobs {
+        string id PK
+    }
+    sequences {
+        string id PK
+    }
+    user_preferences {
+        string id PK
+    }
+    chapter_hearts ||--o{ chapters : "chapter_id -> id"
+    chapter_sequence_map ||--o{ chapters : "chapter_id -> id"
+    chapter_sequence_map ||--o{ sequences : "sequence_id -> id"
+    chapters ||--o{ chapters : "parent_id -> id"
+    comments ||--o{ chapters : "chapter_id -> id"
+    comments ||--o{ comments : "parent_id -> id"
+    generation_jobs ||--o{ chapters : "chapter_id -> id"
+    generation_jobs ||--o{ sequences : "sequence_id -> id"
+```
 
