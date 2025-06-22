@@ -121,6 +121,7 @@ export const generateNewOutline = async (storyOutline: {
       prompt,
       schema: StoryOutlineSchema,
       temperature: 0.5,
+      seed: Math.floor(Math.random() * 1000000),
     });
     console.log("✅ Successfully generated new outline");
     return object.chapters;

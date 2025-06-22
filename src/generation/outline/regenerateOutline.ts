@@ -174,6 +174,7 @@ export const regenerateOutline = async (
       prompt,
       schema: StoryOutlineSchema,
       temperature: 0.4,
+      seed: Math.floor(Math.random() * 1000000),
     });
     console.log(
       `✅ Successfully regenerated ${object.chapters.length} chapters`
