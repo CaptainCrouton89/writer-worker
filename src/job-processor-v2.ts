@@ -47,7 +47,7 @@ export class JobProcessorV2 {
       const chapterIndex = await getChapterIndex(job.chapter_id);
 
       // Step 4: Process outline (generate/regenerate if needed)
-      await this.updateJobProgress(job.id, 15, JOB_STEPS.PROCESSING_OUTLINE);
+      await this.updateJobProgress(job.id, 5, JOB_STEPS.PROCESSING_OUTLINE);
       const outlineResult = await this.outlineProcessor.processOutline(
         job,
         sequence,
@@ -56,19 +56,23 @@ export class JobProcessorV2 {
 
       // Step 5: If outline was generated, save it and generate metadata
       if (outlineResult.wasGenerated) {
-        await this.updateJobProgress(job.id, 25, JOB_STEPS.SAVING_OUTLINE);
+        await this.updateJobProgress(job.id, 20, JOB_STEPS.SAVING_OUTLINE);
         await this.sequenceService.updateChapters(
           job.sequence_id,
           outlineResult.chapters
         );
 
-        await this.updateJobProgress(job.id, 30, JOB_STEPS.GENERATING_METADATA);
+        await this.updateJobProgress(job.id, 25, JOB_STEPS.GENERATING_METADATA);
         await this.generateAndSaveMetadata(
           job.sequence_id,
           outlineResult.chapters
         );
 
-        await this.updateJobProgress(job.id, 35, JOB_STEPS.GENERATING_EMBEDDING);
+        await this.updateJobProgress(
+          job.id,
+          30,
+          JOB_STEPS.GENERATING_EMBEDDING
+        );
         await this.generateAndSaveEmbedding(sequence);
 
         // Mark the prompt as processed if applicable
@@ -81,7 +85,11 @@ export class JobProcessorV2 {
       }
 
       // Step 6: Generate the chapter content
-      await this.updateJobProgress(job.id, 40, JOB_STEPS.GENERATING_CHAPTER_CONTENT);
+      await this.updateJobProgress(
+        job.id,
+        35,
+        JOB_STEPS.GENERATING_CHAPTER_CONTENT
+      );
       await this.generateChapterContent(
         job,
         chapter,
@@ -142,11 +150,15 @@ export class JobProcessorV2 {
   private async generateAndSaveEmbedding(sequence: Sequence): Promise<void> {
     console.log(`🔍 Generating outline embedding`);
 
-    if (!sequence.user_prompt_history || sequence.user_prompt_history.length === 0) {
+    if (
+      !sequence.user_prompt_history ||
+      sequence.user_prompt_history.length === 0
+    ) {
       throw new Error(`Sequence ${sequence.id} has no user prompt history`);
     }
 
-    const latestPrompt = sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
+    const latestPrompt =
+      sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
 
     const outlineText = `
     ${sequence.title}
@@ -154,13 +166,9 @@ export class JobProcessorV2 {
     Tags: ${sequence.tags.join(", ")}
     Trigger Warnings${sequence.trigger_warnings.join(", ")}
     Sexually Explicit: ${sequence.is_sexually_explicit}
-    Eroticism: ${
-      ["Low", "Medium", "High"][latestPrompt.spice_level]
-    }
+    Eroticism: ${["Low", "Medium", "High"][latestPrompt.spice_level]}
     Story Length: ${
-      ["Short Story", "Novella", "Novel/Slow Burn"][
-        latestPrompt.story_length
-      ]
+      ["Short Story", "Novella", "Novel/Slow Burn"][latestPrompt.story_length]
     }`;
     const embeddingVector = await generateEmbedding(outlineText);
 
@@ -192,11 +200,15 @@ export class JobProcessorV2 {
       );
     }
 
-    if (!sequence.user_prompt_history || sequence.user_prompt_history.length === 0) {
+    if (
+      !sequence.user_prompt_history ||
+      sequence.user_prompt_history.length === 0
+    ) {
       throw new Error(`Sequence ${sequence.id} has no user prompt history`);
     }
 
-    const latestPrompt = sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
+    const latestPrompt =
+      sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
 
     // Generate the chapter content
     const chapterContent = await generateChapter(
