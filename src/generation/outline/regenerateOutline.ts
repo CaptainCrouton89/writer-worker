@@ -162,41 +162,54 @@ export const regenerateOutline = async (
   );
   console.log(prompt);
 
-  try {
-    console.log(
-      `🔄 Regenerating ${remainingChapterCount} chapters starting from chapter ${
-        insertionIndex + 1
-      }`
-    );
-    const { object } = await generateObject({
-      model: google("gemini-2.5-pro"),
-      system,
-      prompt,
-      schema: StoryOutlineSchema,
-      temperature: 0.4,
-      seed: Math.floor(Math.random() * 1000000),
-    });
-    console.log(
-      `✅ Successfully regenerated ${object.chapters.length} chapters`
-    );
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
 
-    // Combine the kept chapters with the newly generated ones
-    const finalChapters = [...chaptersToKeep, ...object.chapters];
-
-    // Validate we have the correct total number of chapters
-    if (finalChapters.length !== totalChapterCount) {
-      throw new Error(
-        `Chapter count mismatch: expected ${totalChapterCount}, got ${finalChapters.length}`
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(
+        `🔄 Regenerating ${remainingChapterCount} chapters starting from chapter ${
+          insertionIndex + 1
+        } (attempt ${attempt}/${MAX_RETRIES})`
       );
-    }
+      const { object } = await generateObject({
+        model: google("gemini-2.5-pro"),
+        system,
+        prompt,
+        schema: StoryOutlineSchema,
+        temperature: 0.4,
+        seed: Math.floor(Math.random() * 1000000),
+      });
+      console.log(
+        `✅ Successfully regenerated ${object.chapters.length} chapters`
+      );
 
-    return finalChapters;
-  } catch (error) {
-    console.error("❌ Failed to regenerate outline:", error);
-    throw new Error(
-      `Outline regeneration failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+      // Combine the kept chapters with the newly generated ones
+      const finalChapters = [...chaptersToKeep, ...object.chapters];
+
+      // Validate we have the correct total number of chapters
+      if (finalChapters.length !== totalChapterCount) {
+        throw new Error(
+          `Chapter count mismatch: expected ${totalChapterCount}, got ${finalChapters.length}`
+        );
+      }
+
+      return finalChapters;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`❌ Failed to regenerate outline (attempt ${attempt}/${MAX_RETRIES}):`, error);
+      
+      if (attempt < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+        console.log(`⏳ Retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
   }
+
+  throw new Error(
+    `Outline regeneration failed after ${MAX_RETRIES} attempts: ${
+      lastError?.message || 'Unknown error'
+    }`
+  );
 };

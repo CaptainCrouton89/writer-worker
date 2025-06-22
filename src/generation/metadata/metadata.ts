@@ -11,7 +11,7 @@ const SequenceMetadataSchema = z.object({
   tags: z
     .array(z.string())
     .describe(
-      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, and content"
+      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, setting, and content"
     ),
   trigger_warnings: z
     .array(z.string())
@@ -47,6 +47,7 @@ ${outline}
 - Theme tags: "slow burn", "instalove", "workplace romance", "holiday romance", "secret baby", "amnesia", "revenge"
 - Content tags: "steamy", "explicit", "emotional", "angst", "humor", "suspense", "mystery"
 - Setting tags: "office", "ranch", "hospital", "college", "small town", "big city", "vacation", "wedding"
+- Fanfic tags: "harry potter", "lord of the rings", "star wars", "marvel", "divergent", "game of thrones"
 
 **Trigger Warnings**: Analyze the story content and provide appropriate trigger warnings. Common triggers include:
 - "violence", "domestic abuse", "sexual assault", "non-consensual", "dubious consent"
@@ -73,6 +74,10 @@ Only include warnings that are actually relevant to the story content.
     return object;
   } catch (error) {
     console.error("❌ Failed to generate metadata:", error);
-    throw new Error(`Metadata generation failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Metadata generation failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 };

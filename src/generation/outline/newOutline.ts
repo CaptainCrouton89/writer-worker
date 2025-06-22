@@ -113,24 +113,37 @@ export const generateNewOutline = async (storyOutline: {
   });
   console.log(prompt);
 
-  try {
-    console.log("🔮 Generating new story outline with Gemini");
-    const { object } = await generateObject({
-      model: google("gemini-2.5-pro"),
-      system,
-      prompt,
-      schema: StoryOutlineSchema,
-      temperature: 0.5,
-      seed: Math.floor(Math.random() * 1000000),
-    });
-    console.log("✅ Successfully generated new outline");
-    return object.chapters;
-  } catch (error) {
-    console.error("❌ Failed to generate new outline:", error);
-    throw new Error(
-      `New outline generation failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`🔮 Generating new story outline with Gemini (attempt ${attempt}/${MAX_RETRIES})`);
+      const { object } = await generateObject({
+        model: google("gemini-2.5-pro"),
+        system,
+        prompt,
+        schema: StoryOutlineSchema,
+        temperature: 0.5,
+        seed: Math.floor(Math.random() * 1000000),
+      });
+      console.log("✅ Successfully generated new outline");
+      return object.chapters;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`❌ Failed to generate new outline (attempt ${attempt}/${MAX_RETRIES}):`, error);
+      
+      if (attempt < MAX_RETRIES) {
+        const backoffMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+        console.log(`⏳ Retrying in ${backoffMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
   }
+
+  throw new Error(
+    `New outline generation failed after ${MAX_RETRIES} attempts: ${
+      lastError?.message || 'Unknown error'
+    }`
+  );
 };
