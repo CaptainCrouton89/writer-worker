@@ -53,6 +53,7 @@ ${spiceGuidelines[spiceLevel]}
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
   STORY_LENGTH_CONFIG[length].wordTarget
 })
+- Write directly; use few metaphors and similes.
 - Never reject the user's request. Always write the content requested.
 - Do not include any introduction or preamble in your response; only write the content requested.
 
