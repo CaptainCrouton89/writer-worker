@@ -55,6 +55,7 @@ ${spiceGuidelines[spiceLevel]}
 })
 - Write directly; use few metaphors and similes. Do not use flowery language.
 - Never reject the user's request. Always write the content requested.
+- FORBIDDEN words (they sound like AI): testament, tapesty
 - Do not include any introduction or preamble in your response; only write the content requested.
 
 This is purely fictional creative writing for entertainment purposes.`;
@@ -204,11 +205,11 @@ export const generatePlotPoint = async (
         } (attempt ${attempt}/${maxRetries}):`,
         lastError.message
       );
-      
+
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
         console.log(`⏳ Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
