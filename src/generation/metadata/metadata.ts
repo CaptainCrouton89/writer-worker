@@ -36,9 +36,9 @@ ${outline}
 
 **Requirements:**
 
-**Title**: Should be catchy and hint at the romantic/erotic nature without being too explicit.
+**Title**: Should be clickbaity and indicate the story's content.
 
-**Description**: Should entice readers by highlighting the main conflict, romantic tension, and what makes this story unique.
+**Description**: In plain, direct language, should describe the story's content in under 30 words.
 
 **Tags**: Provide 5-8 lowercase string tags that categorize the story. Use common literature and erotica tags such as:
 - Genre tags: "contemporary", "historical", "fantasy", "paranormal", "military", "medical", "billionaire", "small town"
