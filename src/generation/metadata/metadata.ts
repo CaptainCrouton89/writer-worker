@@ -62,22 +62,33 @@ Only include warnings that are actually relevant to the story content.
 - TRUE: Contains graphic sexual descriptions, detailed intimate acts, explicit language about body parts/sexual acts
 - FALSE: Contains only romantic tension, kissing, fade-to-black scenes, or mild sensual content`;
 
-  try {
-    console.log("🏷️ Generating sequence metadata with Gemini");
-    const { object } = await generateObject({
-      model: google("gemini-2.5-pro"),
-      prompt,
-      schema: SequenceMetadataSchema,
-      temperature: 0.2,
-    });
-    console.log("✅ Successfully generated metadata");
-    return object;
-  } catch (error) {
-    console.error("❌ Failed to generate metadata:", error);
-    throw new Error(
-      `Metadata generation failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+  const maxRetries = 3;
+  let lastError: Error = new Error("Unknown error");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🏷️ Generating sequence metadata with Gemini (attempt ${attempt}/${maxRetries})`);
+      const { object } = await generateObject({
+        model: google("gemini-2.5-pro"),
+        prompt,
+        schema: SequenceMetadataSchema,
+        temperature: 0.2,
+      });
+      console.log("✅ Successfully generated metadata");
+      return object;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`❌ Failed to generate metadata (attempt ${attempt}/${maxRetries}):`, lastError.message);
+      
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
+
+  throw new Error(
+    `Metadata generation failed after ${maxRetries} attempts: ${lastError.message}`
+  );
 };

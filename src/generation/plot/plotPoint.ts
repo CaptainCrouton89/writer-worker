@@ -175,34 +175,45 @@ export const generatePlotPoint = async (
 
   console.log(prompt);
 
-  try {
-    console.log(
-      `📝 Generating plot point ${plotPointIndex + 1} for chapter ${
-        chapterIndex + 1
-      } with Gemini`
-    );
-    const { text } = await generateText({
-      model: google("gemini-2.5-pro"),
-      prompt,
-      system,
-      temperature: 0.8,
-      topP: 0.9,
-      topK: 50,
-      seed: Math.floor(Math.random() * 1000000),
-    });
-    console.log(`✅ Successfully generated plot point ${plotPointIndex + 1}`);
-    return text.replace(/^Of course, here it is:/, "");
-  } catch (error) {
-    console.error(
-      `❌ Failed to generate plot point ${plotPointIndex + 1} for chapter ${
-        chapterIndex + 1
-      }:`,
-      error
-    );
-    throw new Error(
-      `Plot point generation failed: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+  const maxRetries = 3;
+  let lastError: Error = new Error("Unknown error");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(
+        `📝 Generating plot point ${plotPointIndex + 1} for chapter ${
+          chapterIndex + 1
+        } with Gemini (attempt ${attempt}/${maxRetries})`
+      );
+      const { text } = await generateText({
+        model: google("gemini-2.5-pro"),
+        prompt,
+        system,
+        temperature: 0.8,
+        topP: 0.9,
+        topK: 50,
+        seed: Math.floor(Math.random() * 1000000),
+      });
+      console.log(`✅ Successfully generated plot point ${plotPointIndex + 1}`);
+      return text.replace(/^Of course, here it is:/, "");
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(
+        `❌ Failed to generate plot point ${plotPointIndex + 1} for chapter ${
+          chapterIndex + 1
+        } (attempt ${attempt}/${maxRetries}):`,
+        lastError.message
+      );
+      
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
+
+  throw new Error(
+    `Plot point generation failed after ${maxRetries} attempts: ${lastError.message}`
+  );
 };
