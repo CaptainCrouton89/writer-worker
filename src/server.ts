@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import { supabase } from "./lib/supabase.js";
 import { HEALTH_STATUS, JOB_STATUS } from "./lib/constants/status.js";
+import { JobRetryService, RetryJobRequest } from "./services/job-retry-service.js";
 
 const app = express();
 const PORT = process.env.PORT || 3951;
@@ -55,7 +56,8 @@ app.get("/", (req, res) => {
     description: "Background worker service for story generation",
     endpoints: {
       health: "/health",
-      metrics: "/metrics (coming soon)",
+      metrics: "/metrics",
+      retry: "POST /jobs/retry",
     },
   });
 });
@@ -108,6 +110,63 @@ app.get("/metrics", async (req, res) => {
     console.error("Metrics fetch failed:", error);
     res.status(500).json({
       error: "Failed to fetch metrics",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Job retry endpoint
+app.post("/jobs/retry", async (req: express.Request, res: express.Response) => {
+  try {
+    const retryRequest: RetryJobRequest = req.body;
+    
+    // Basic validation
+    if (!retryRequest.job_id && !retryRequest.user_id && !retryRequest.chapter_id) {
+      res.status(400).json({
+        error: "Must specify job_id, user_id, or chapter_id",
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    console.log(`🔄 Retry request received:`, {
+      job_id: retryRequest.job_id,
+      user_id: retryRequest.user_id,
+      chapter_id: retryRequest.chapter_id,
+    });
+
+    const retryService = new JobRetryService();
+    const result = await retryService.retryJobs(retryRequest);
+
+    // Check if rate limited
+    const isRateLimited = result.errors.some(error => error.includes("Rate limit exceeded"));
+    let statusCode = 200;
+    
+    if (isRateLimited) {
+      statusCode = 429; // Too Many Requests
+    } else if (result.success) {
+      statusCode = 200;
+    } else if (result.errors.length > 0) {
+      statusCode = 400;
+    } else {
+      statusCode = 404;
+    }
+
+    res.status(statusCode).json({
+      success: result.success,
+      message: result.success 
+        ? `Successfully retried ${result.retriedJobs.length} job(s)`
+        : "Failed to retry jobs",
+      retried_jobs: result.retriedJobs,
+      skipped_jobs: result.skippedJobs,
+      errors: result.errors,
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (error) {
+    console.error("Job retry failed:", error);
+    res.status(500).json({
+      error: "Internal server error during job retry",
       timestamp: new Date().toISOString(),
     });
   }

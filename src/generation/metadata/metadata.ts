@@ -3,16 +3,24 @@ import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
 
-// Schema for title and description
+// Schema for title and description only
 const TitleDescriptionSchema = z.object({
-  title: z.string().describe("A compelling, concise title for the story"),
+  title: z
+    .string()
+    .describe("A compelling, concise, clickbaity title for the story"),
   description: z
     .string()
-    .describe("A 2-sentence description of the story that entices readers"),
+    .describe(
+      "A 2-sentence description of the story that entices readers and directly describes the content"
+    ),
+});
+
+// Schema for tags
+const TagsSchema = z.object({
   tags: z
     .array(z.string())
     .describe(
-      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, setting, and content"
+      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, and content"
     ),
 });
 
@@ -39,7 +47,7 @@ const SequenceMetadataSchema = z.object({
   tags: z
     .array(z.string())
     .describe(
-      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, setting, and content"
+      "A list of 5-8 lowercase string tags that categorize the story's themes, genres, and content"
     ),
   trigger_warnings: z
     .array(z.string())
@@ -53,21 +61,27 @@ const SequenceMetadataSchema = z.object({
     ),
 });
 
-// Generate title, description, and tags
+// Generate title and description only
 async function generateTitleDescription(
   outline: string
 ): Promise<z.infer<typeof TitleDescriptionSchema>> {
-  const systemPrompt = `You are a creative writer specializing in compelling titles and descriptions for stories. Focus on creating clickbait titles that hint at the story's content and concise descriptions that entice readers.`;
+  const systemPrompt = `## Identity
+You are a romance and erotic fiction title specialist with expertise in creating compelling, marketable titles and descriptions.
 
-  const prompt = `Based on this story outline, generate a compelling title, description, and relevant tags.
+### Title Conventions
+- Create clickbait-style titles that grab attention immediately
+- Make readers feel they'll miss out if they don't click
+- Be descriptive in the title; the readers are scanning quickly
 
-Story Outline:
-${outline}
+### Description Best Practices
+- Start with a direct statement of what happens in the story
+- Clearly identify the main characters and their relationship
+- State the central conflict or obstacle plainly
+- Mention the setting and time period if relevant
+- Be factual and informative about the story's content`;
 
-Requirements:
-- Title: Clickbaity and indicative of content
-- Description: Plain language, under 30 words
-- Tags: 5-8 lowercase tags from common literature/erotica categories (contemporary, romance, fantasy, steamy, etc.)`;
+  const prompt = `Generate a title and description for this story outline:
+${outline}`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
@@ -102,26 +116,49 @@ Requirements:
   throw new Error(`Title/description generation failed: ${lastError.message}`);
 }
 
-// Generate trigger warnings
-async function generateTriggerWarnings(
+// Generate tags
+async function generateTags(
   outline: string
-): Promise<z.infer<typeof TriggerWarningsSchema>> {
-  const systemPrompt = `You are a content safety specialist. Analyze stories for potentially sensitive content that readers should be warned about. Be thorough but only include warnings that are actually present in the content.`;
+): Promise<z.infer<typeof TagsSchema>> {
+  const systemPrompt = `## Identity
+You are a content categorization specialist for romance and erotic fiction with deep knowledge of reader search patterns and genre conventions.
 
-  const prompt = `Analyze this story outline and identify appropriate trigger warnings.
+## Capabilities
+- Analyze story content to identify key themes, tropes, and elements
+- Select the most relevant and searchable tags from established categories
+- Balance broad appeal tags with specific niche identifiers
+- Understand reader search behavior and tag popularity
 
-Story Outline:
-${outline}
+## Domain Knowledge - Tag Taxonomy
+### Genre Tags
+"contemporary", "historical", "fantasy", "paranormal", "military", "medical", "billionaire", "small town", "regency", "victorian", "medieval", "western", "sci-fi", "dystopian", "post-apocalyptic"
 
-Common triggers to check for:
-- Violence, abuse, assault
-- Substance abuse, addiction
-- Mental health issues, self-harm
-- Death, grief, loss
-- Power imbalances, manipulation
-- Medical trauma, pregnancy issues
+### Relationship Tags
+"enemies to lovers", "friends to lovers", "second chance", "forbidden love", "age gap", "fake relationship", "marriage of convenience", "arranged marriage", "office romance", "opposites attract", "love triangle", "polyamory", "soulmates"
 
-Only include warnings for content actually present in the story.`;
+### Character Tags
+"alpha male", "strong heroine", "single parent", "boss", "cowboy", "doctor", "teacher", "artist", "billionaire", "virgin", "experienced", "dominant", "submissive", "bad boy", "nerd", "athlete", "musician", "chef", "lawyer", "firefighter", "police", "military", "royalty"
+
+### Theme Tags
+"slow burn", "instalove", "workplace romance", "holiday romance", "secret baby", "amnesia", "revenge", "redemption", "healing", "found family", "coming of age", "mistaken identity", "secret identity", "forced proximity"
+
+### Content Tags
+"steamy", "explicit", "emotional", "angst", "humor", "suspense", "mystery", "dark", "sweet", "fluffy", "drama", "action", "adventure", "thriller", "tear-jerker"
+
+### Fanfic Tags
+"harry potter", "lord of the rings", "star wars", "marvel", "divergent", "game of thrones", "twilight", "percy jackson", "hunger games", "supernatural", "sherlock", "pride and prejudice"
+
+## Guidelines
+- Select 5-8 tags that best represent the story's core elements
+- Prioritize tags that readers are most likely to search for
+- Include a mix of broad genre tags and specific trope/theme tags
+- Always use lowercase for consistency
+- Choose tags that accurately reflect the story content
+- Consider both mainstream and niche audiences`;
+
+  const prompt = `Analyze this story outline and select 5-8 relevant tags from the established categories:
+
+${outline}`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
@@ -129,10 +166,61 @@ Only include warnings for content actually present in the story.`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `⚠️  Generating trigger warnings with GPT-4o-mini (attempt ${attempt}/${maxRetries})`
+        `🏷️  Generating tags with GPT-4.1-mini (attempt ${attempt}/${maxRetries})`
       );
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: openai("gpt-4.1-mini"),
+        system: systemPrompt,
+        prompt,
+        schema: TagsSchema,
+        temperature: 0.2,
+      });
+      return object;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(
+        `❌ Failed to generate tags (attempt ${attempt}/${maxRetries}):`,
+        lastError.message
+      );
+
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw new Error(`Tags generation failed: ${lastError.message}`);
+}
+
+// Generate trigger warnings
+async function generateTriggerWarnings(
+  outline: string
+): Promise<z.infer<typeof TriggerWarningsSchema>> {
+  const systemPrompt = `You are a content safety specialist identifying potentially triggering content in romance fiction.
+
+Key trigger categories: violence, abuse, non-consensual content, substance abuse, mental health issues, death/grief, medical trauma, toxic relationships, stalking/harassment, child-related trauma, etc.
+
+Guidelines:
+- Only warn for content explicitly present in the story
+- Use specific terms, not vague warnings
+- Consensual BDSM is not abuse
+- Age gap warnings for 10+ year differences with power dynamics`;
+
+  const prompt = `Review this story outline and identify any content requiring trigger warnings:
+
+${outline}`;
+
+  const maxRetries = 3;
+  let lastError: Error = new Error("Unknown error");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(
+        `⚠️  Generating trigger warnings with GPT-4.1-mini (attempt ${attempt}/${maxRetries})`
+      );
+      const { object } = await generateObject({
+        model: openai("gpt-4.1-mini"),
         system: systemPrompt,
         prompt,
         schema: TriggerWarningsSchema,
@@ -167,9 +255,9 @@ async function detectExplicitContent(
 Story Outline:
 ${outline}
 
-Classification:
-- TRUE: Graphic sexual descriptions, detailed intimate acts, explicit language
-- FALSE: Romantic tension, kissing, fade-to-black, mild sensual content`;
+**Sexually Explicit Flag**: Determine if this is sexually explicit content:
+- TRUE: Contains graphic sexual descriptions, detailed intimate acts, explicit language about body parts/sexual acts
+- FALSE: Contains only romantic tension, kissing, fade-to-black scenes, or mild sensual content`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
@@ -177,10 +265,10 @@ Classification:
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🔞 Detecting explicit content with GPT-4o-mini (attempt ${attempt}/${maxRetries})`
+        `🔞 Detecting explicit content with GPT-4.1-mini (attempt ${attempt}/${maxRetries})`
       );
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: openai("gpt-4.1-mini"),
         system: systemPrompt,
         prompt,
         schema: ExplicitContentSchema,
@@ -211,13 +299,15 @@ export const generateSequenceMetadata = async (
   console.log("🏷️ Generating sequence metadata with parallel AI calls");
 
   try {
-    // Execute all three AI calls in parallel
+    // Execute all four AI calls in parallel
     const [
       titleDescriptionResult,
+      tagsResult,
       triggerWarningsResult,
       explicitContentResult,
     ] = await Promise.all([
       generateTitleDescription(outline),
+      generateTags(outline),
       generateTriggerWarnings(outline),
       detectExplicitContent(outline),
     ]);
@@ -225,6 +315,7 @@ export const generateSequenceMetadata = async (
     // Combine results
     const metadata = {
       ...titleDescriptionResult,
+      ...tagsResult,
       ...triggerWarningsResult,
       ...explicitContentResult,
     };
