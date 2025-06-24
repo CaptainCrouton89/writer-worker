@@ -44,6 +44,7 @@ ${spiceGuidelines[outline.spiceLevel]}
   STORY_LENGTH_CONFIG[outline.storyLength].wordTarget
 }
 - Use good pacing, and follow typical story structure.
+- Be creative and original in the story plot, while remaining within the bounds of the user's request.
 </outline_structure>
 
 <bullet_point_style>
@@ -118,7 +119,9 @@ export const generateNewOutline = async (storyOutline: {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`🔮 Generating new story outline with Gemini (attempt ${attempt}/${MAX_RETRIES})`);
+      console.log(
+        `🔮 Generating new story outline with Gemini (attempt ${attempt}/${MAX_RETRIES})`
+      );
       const { object } = await generateObject({
         model: google("gemini-2.5-pro"),
         system,
@@ -131,19 +134,22 @@ export const generateNewOutline = async (storyOutline: {
       return object.chapters;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`❌ Failed to generate new outline (attempt ${attempt}/${MAX_RETRIES}):`, error);
-      
+      console.error(
+        `❌ Failed to generate new outline (attempt ${attempt}/${MAX_RETRIES}):`,
+        error
+      );
+
       if (attempt < MAX_RETRIES) {
         const backoffMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
         console.log(`⏳ Retrying in ${backoffMs}ms...`);
-        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
       }
     }
   }
 
   throw new Error(
     `New outline generation failed after ${MAX_RETRIES} attempts: ${
-      lastError?.message || 'Unknown error'
+      lastError?.message || "Unknown error"
     }`
   );
 };
