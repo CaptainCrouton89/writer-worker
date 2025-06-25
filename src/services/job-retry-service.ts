@@ -12,6 +12,7 @@ export interface RetryResult {
   success: boolean;
   retriedJobs: string[];
   skippedJobs: string[];
+  deletedJobs: string[];
   errors: string[];
 }
 
@@ -25,6 +26,7 @@ export class JobRetryService {
       success: false,
       retriedJobs: [],
       skippedJobs: [],
+      deletedJobs: [],
       errors: [],
     };
 
@@ -57,11 +59,18 @@ export class JobRetryService {
       // Process each job
       for (const job of failedJobs) {
         try {
-          const canRetry = await this.validateJobForRetry(job);
+          const validation = await this.validateJobForRetry(job);
           
-          if (!canRetry.isValid) {
-            result.skippedJobs.push(job.id);
-            result.errors.push(`Job ${job.id}: ${canRetry.reason}`);
+          if (!validation.isValid) {
+            // Determine if we should delete this job or just skip it
+            if (validation.shouldDelete) {
+              await this.deleteJob(job.id);
+              result.deletedJobs.push(job.id);
+              console.log(`🗑️ Deleted invalid job ${job.id}: ${validation.reason}`);
+            } else {
+              result.skippedJobs.push(job.id);
+              result.errors.push(`Job ${job.id}: ${validation.reason}`);
+            }
             continue;
           }
 
@@ -109,21 +118,21 @@ export class JobRetryService {
     return (data as GenerationJob[]) || [];
   }
 
-  private async validateJobForRetry(job: GenerationJob): Promise<{ isValid: boolean; reason?: string }> {
-    // Check if job has required fields
+  private async validateJobForRetry(job: GenerationJob): Promise<{ isValid: boolean; reason?: string; shouldDelete?: boolean }> {
+    // Check if job has required fields - these should be deleted as they're corrupted
     if (!job.sequence_id) {
-      return { isValid: false, reason: "Missing sequence_id" };
+      return { isValid: false, reason: "Missing sequence_id", shouldDelete: true };
     }
 
     if (!job.chapter_id) {
-      return { isValid: false, reason: "Missing chapter_id" };
+      return { isValid: false, reason: "Missing chapter_id", shouldDelete: true };
     }
 
     if (!job.user_id) {
-      return { isValid: false, reason: "Missing user_id" };
+      return { isValid: false, reason: "Missing user_id", shouldDelete: true };
     }
 
-    // Check if there are any active jobs for the same chapter
+    // Check if there are any active jobs for the same chapter - delete duplicates
     const { data: activeJobs, error: activeJobsError } = await supabase
       .from("generation_jobs")
       .select("id")
@@ -135,10 +144,10 @@ export class JobRetryService {
     }
 
     if (activeJobs && activeJobs.length > 0) {
-      return { isValid: false, reason: "Chapter already has active jobs" };
+      return { isValid: false, reason: "Chapter already has active jobs", shouldDelete: true };
     }
 
-    // Verify chapter still exists
+    // Verify chapter still exists - delete jobs for deleted chapters
     const { data: chapter, error: chapterError } = await supabase
       .from("chapters")
       .select("id, generation_status")
@@ -146,10 +155,10 @@ export class JobRetryService {
       .single();
 
     if (chapterError) {
-      return { isValid: false, reason: `Chapter not found: ${chapterError.message}` };
+      return { isValid: false, reason: `Chapter not found: ${chapterError.message}`, shouldDelete: true };
     }
 
-    // Verify sequence still exists
+    // Verify sequence still exists - delete jobs for deleted sequences
     const { data: sequence, error: sequenceError } = await supabase
       .from("sequences")
       .select("id")
@@ -157,10 +166,10 @@ export class JobRetryService {
       .single();
 
     if (sequenceError) {
-      return { isValid: false, reason: `Sequence not found: ${sequenceError.message}` };
+      return { isValid: false, reason: `Sequence not found: ${sequenceError.message}`, shouldDelete: true };
     }
 
-    // Verify chapter-sequence mapping exists
+    // Verify chapter-sequence mapping exists - delete jobs for broken mappings
     const { data: mapping, error: mappingError } = await supabase
       .from("chapter_sequence_map")
       .select("id")
@@ -169,7 +178,7 @@ export class JobRetryService {
       .single();
 
     if (mappingError) {
-      return { isValid: false, reason: `Chapter-sequence mapping not found: ${mappingError.message}` };
+      return { isValid: false, reason: `Chapter-sequence mapping not found: ${mappingError.message}`, shouldDelete: true };
     }
 
     return { isValid: true };
@@ -265,5 +274,16 @@ export class JobRetryService {
       remaining: JobRetryService.MAX_RETRIES_PER_MINUTE - currentData.count,
       resetInSeconds: (currentData.resetTime - now) / 1000,
     };
+  }
+
+  private async deleteJob(jobId: string): Promise<void> {
+    const { error } = await supabase
+      .from("generation_jobs")
+      .delete()
+      .eq("id", jobId);
+
+    if (error) {
+      throw new Error(`Failed to delete job ${jobId}: ${error.message}`);
+    }
   }
 }

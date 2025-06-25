@@ -159,6 +159,7 @@ app.post("/jobs/retry", async (req: express.Request, res: express.Response) => {
         : "Failed to retry jobs",
       retried_jobs: result.retriedJobs,
       skipped_jobs: result.skippedJobs,
+      deleted_jobs: result.deletedJobs,
       errors: result.errors,
       timestamp: new Date().toISOString(),
     });
