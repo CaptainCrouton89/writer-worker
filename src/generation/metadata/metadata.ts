@@ -205,6 +205,7 @@ Guidelines:
 - Only warn for content explicitly present in the story
 - Use specific terms, not vague warnings
 - Consensual BDSM is not abuse
+- 1-2 words maximum
 - Age gap warnings for 10+ year differences with power dynamics`;
 
   const prompt = `Review this story outline and identify any content requiring trigger warnings:

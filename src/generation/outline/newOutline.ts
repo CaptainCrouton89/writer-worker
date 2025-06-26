@@ -51,7 +51,7 @@ ${spiceGuidelines[outline.spiceLevel]}
 Write concise bullet points that are 1-2 sentences long. Each should:
 - Provide concrete story events that can be expanded into detailed content
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
--Keep bullets sparse, so as to be most useful for a writer to expand into detailed content later.
+-Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Aim for 2 sentences per bullet.
 </bullet_point_style>
 
 <output_format>
