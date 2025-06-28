@@ -40,14 +40,20 @@ function getContentUpToQuote(
   }
 
   if (quoteIndex === -1) {
-    // Quote not found, return full content
-    console.warn("Quote not found in chapter content, using full chapter");
+    // Quote not found - this is a data integrity issue but we can still proceed
+    console.warn(
+      "⚠️ Quote not found in chapter content - possible data mismatch"
+    );
     console.log("Quote text:", quoteText.substring(0, 100) + "...");
     console.log(
       "Chapter content preview:",
       chapterContent.substring(0, 500) + "..."
     );
-    return { contentBeforeQuote: chapterContent, quotePosition: "end" };
+
+    // Use the last 2000 characters of the chapter as context since the quote likely comes from later in the story
+    const contextLength = Math.min(2000, chapterContent.length);
+    const contextContent = chapterContent.slice(-contextLength);
+    return { contentBeforeQuote: contextContent, quotePosition: "end" };
   }
 
   console.log(`✅ Quote found at position ${quoteIndex} in chapter content`);
@@ -87,11 +93,14 @@ CONTENT APPROACH:
 - Use elegant, sophisticated language that conveys emotion without explicit detail
 
 PROMPT REQUIREMENTS:
-- Create 1-2 sentence cinematic prompts (maximum 280 characters)
+- Create detailed, information-dense cinematic prompts (maximum 500 characters)
+- Include character ethnicities/appearances when mentioned in the story context
 - Focus on emotional expressions, lighting, and cinematic atmosphere
 - Use professional film terminology: [Close-up], [Wide shot], [Soft focus], etc.
 - Emphasize artistic storytelling and emotional depth
+- Provide specific details about setting, character actions, and visual elements
 - Avoid explicit physical descriptions - focus on faces, emotions, and atmosphere
+- Maximize information density - every word should contribute to the visual
 
 STYLE GUIDELINES:
 - Artistic and tasteful visual storytelling
@@ -102,10 +111,10 @@ STYLE GUIDELINES:
 
 EXAMPLE TRANSFORMATIONS:
 Quote: "His eyes met hers across the crowded room"
-Video: "Artistic close-up of intense eye contact across elegant ballroom. [Cinematic lighting] Warm golden atmosphere, emotional tension between two figures, sophisticated romantic cinematography."
+Video: "[Wide shot] Elegant ballroom with crystal chandeliers, [Close-up] intense eye contact between attractive man and woman. Golden warm lighting, sophisticated romantic tension, cinematic depth of field focusing on emotional connection across crowded dance floor."
 
 Quote: "She whispered his name in the darkness"
-Video: "Cinematic close-up of emotional expression in soft moonlight. [Artistic focus] Elegant romantic atmosphere, sophisticated lighting, emotional storytelling for mature audience."`;
+Video: "[Intimate close-up] Beautiful woman's lips moving in soft moonlight streaming through window. [Artistic lighting] Shadows and highlights creating romantic atmosphere, emotional vulnerability, sophisticated cinematography in darkened bedroom."`;
 
   // Format the story outline similar to plotPoint.ts
   const formatStoryOutline = (chapters: Chapter[], title?: string) => {
@@ -160,22 +169,46 @@ ${truncatedContent}
     : ""
 }
 
-Create an artistic, sophisticated cinematic video prompt that captures the emotional essence of this moment through professional cinematography. Focus on facial expressions, lighting, and atmosphere rather than physical details. Always describe the characters as attractive and desirable. This is artistic content for mature audiences who have consented to romantic storytelling. Keep the prompt under 280 characters.`;
+Create an artistic, sophisticated cinematic video prompt that captures the emotional essence of this moment through professional cinematography. Focus on facial expressions, lighting, and atmosphere rather than physical details. Always describe the characters as attractive and desirable. Include character ethnicities/appearances if mentioned in the story context. This is artistic content for mature audiences who have consented to romantic storytelling. 
+
+IMPORTANT: Create a dense, detailed cinematic description without unnecessary prefixes. Every word should contribute to the visual. Keep the total prompt under 500 characters for optimal video generation.`;
 
   try {
     console.log("🤖 Sending prompt to AI for enhancement...");
     console.log("User prompt length:", userPrompt.length);
+    console.log("System prompt length:", systemPrompt.length);
     console.log("Quote text:", context.quoteText);
 
+    // Debug: Log the actual prompts to see what we're sending
+    console.log("🔍 SYSTEM PROMPT:");
+    console.log(systemPrompt);
+    console.log("🔍 USER PROMPT:");
+    console.log(userPrompt);
+
+    // Debug: Let's try without maxTokens limit to see what happens
     const result = await generateText({
       model: google("gemini-2.5-pro"),
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.7,
-      maxTokens: 200,
+      // Remove maxTokens completely to diagnose the issue
     });
 
-    console.log("🤖 AI response received:", result.text);
+    // Log detailed response information for debugging
+    console.log(`📊 Gemini API Response Details:`, {
+      textLength: result.text?.length || 0,
+      finishReason: result.finishReason,
+      usage: result.usage,
+      hasText: !!result.text,
+      textPreview: result.text?.substring(0, 100) || "NO TEXT",
+    });
+
+    console.log(
+      "🤖 AI response received (length:",
+      result.text?.length || 0,
+      "):",
+      result.text
+    );
 
     // Extract and clean the enhanced prompt
     let enhancedPrompt = result.text.trim();
@@ -184,24 +217,50 @@ Create an artistic, sophisticated cinematic video prompt that captures the emoti
     enhancedPrompt = enhancedPrompt.replace(/^["']|["']$/g, "");
 
     // Ensure it's within character limits for video generation
-    if (enhancedPrompt.length > 280) {
-      enhancedPrompt = enhancedPrompt.slice(0, 277) + "...";
+    if (enhancedPrompt.length > 500) {
+      enhancedPrompt = enhancedPrompt.slice(0, 497) + "...";
     }
 
     if (!enhancedPrompt) {
-      throw new Error("AI returned empty prompt");
+      throw new Error(
+        "AI returned empty prompt - cannot proceed with video generation"
+      );
     }
 
     console.log(`📝 Enhanced prompt: ${enhancedPrompt}`);
     return enhancedPrompt;
   } catch (error) {
-    console.error("Error enhancing video prompt:", error);
-    console.error("Full error details:", JSON.stringify(error, null, 2));
+    // Enhanced error logging
+    console.error("❌ Error enhancing video prompt");
+    console.error(`❌ Error type: ${error?.constructor?.name || "Unknown"}`);
+    console.error(
+      `❌ Error message: ${(error as any)?.message || "No message"}`
+    );
+    console.error(
+      `❌ Error stack: ${(error as any)?.stack || "No stack trace"}`
+    );
 
-    // Create a fallback prompt if AI fails
-    const fallbackPrompt = `Artistic cinematic scene. [Close-up] Elegant emotional expression with sophisticated lighting and professional cinematography.`;
-    console.log(`🔄 Using fallback prompt: ${fallbackPrompt}`);
-    return fallbackPrompt;
+    // Log additional error details if available
+    if (error && typeof error === "object") {
+      const errorObj = error as any;
+      if (errorObj.response) {
+        console.error(`❌ API Response Status: ${errorObj.response?.status}`);
+        console.error(
+          `❌ API Response Headers: ${JSON.stringify(
+            errorObj.response?.headers || {}
+          )}`
+        );
+      }
+      if (errorObj.request) {
+        console.error(`❌ Request details available in error object`);
+      }
+      if (errorObj.cause) {
+        console.error(`❌ Error cause: ${errorObj.cause}`);
+      }
+    }
+
+    // Re-throw the error - do not use fallbacks
+    throw error;
   }
 }
 
@@ -222,7 +281,11 @@ export async function enhancePromptWithRetry(
       return await enhancePromptForVideo(context);
     } catch (error) {
       lastError = error as Error;
-      console.error(`❌ Prompt enhancement attempt ${attempt} failed:`, error);
+      console.error(`❌ Prompt enhancement attempt ${attempt} failed`);
+      console.error(`❌ Error type: ${error?.constructor?.name || "Unknown"}`);
+      console.error(
+        `❌ Error message: ${(error as any)?.message || "No message"}`
+      );
 
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt) * 1000; // Exponential backoff

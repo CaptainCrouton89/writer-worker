@@ -22,7 +22,7 @@ interface VideoGenerationResult {
 }
 
 /**
- * Generates a video for a featured quote using Replicate's Seedance-1-Lite model
+ * Generates a video for a featured quote using Replicate's Seedance-1-Pro model
  */
 export async function generateVideo(
   context: VideoGenerationContext
@@ -49,12 +49,12 @@ export async function generateVideo(
     camera_fixed: false,
   };
 
-  console.log("🎥 Submitting to Replicate Seedance-1-Lite...");
+  console.log("🎥 Submitting to Replicate Seedance-1-pro...");
   console.log(`Input: ${JSON.stringify(input, null, 2)}`);
 
   try {
     // Step 3: Generate video using Replicate
-    const output = await replicate.run("bytedance/seedance-1-lite", { input });
+    const output = await replicate.run("bytedance/seedance-1-pro", { input });
 
     console.log("🔍 Replicate output type:", typeof output);
     console.log("🔍 Replicate output:", output);

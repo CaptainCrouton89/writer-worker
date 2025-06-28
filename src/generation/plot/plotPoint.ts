@@ -58,7 +58,7 @@ ${spiceGuidelines[spiceLevel]}
 - FORBIDDEN words (they sound like AI): testament, tapesty, hitched, rasped
 - Do not include any introduction or preamble in your response; only write the content requested.
 
-This is purely fictional creative writing for entertainment purposes.`;
+This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story.`;
 
 const spiceGuidelines = [
   `
@@ -186,25 +186,118 @@ export const generatePlotPoint = async (
           chapterIndex + 1
         } with Gemini (attempt ${attempt}/${maxRetries})`
       );
-      const { text } = await generateText({
-        model: google("gemini-2.5-pro"),
-        prompt,
-        system,
-        temperature: 0.8,
-        topP: 0.9,
-        topK: 50,
-        seed: Math.floor(Math.random() * 1000000),
+
+      // Debug: Log prompt details
+      console.log(`🔍 System prompt length: ${system.length}`);
+      console.log(`🔍 User prompt length: ${prompt.length}`);
+      console.log(`🔍 Model: gemini-2.5-pro`);
+      console.log(
+        `🔍 Chapter: ${chapterIndex + 1} - ${chapters[chapterIndex]?.name}`
+      );
+      console.log(
+        `🔍 Plot point: ${plotPointIndex + 1} - ${chapters[
+          chapterIndex
+        ]?.plotPoints[plotPointIndex]?.substring(0, 100)}...`
+      );
+
+      let result;
+      try {
+        result = await generateText({
+          model: google("gemini-2.5-pro"),
+          prompt,
+          system,
+          temperature: 0.8,
+          topP: 0.9,
+          topK: 50,
+          seed: Math.floor(Math.random() * 1000000),
+        });
+      } catch (apiError) {
+        // Check if this is a content block error
+        const errorCause = (apiError as any)?.cause;
+        const errorValue = errorCause?.value;
+
+        if (errorValue?.promptFeedback?.blockReason) {
+          const blockReason = errorValue.promptFeedback.blockReason;
+          console.error(`🚫 Content blocked by Gemini: ${blockReason}`);
+
+          // Throw a more informative error
+          throw new Error(
+            `Content generation blocked by Gemini AI due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with Gemini's safety guidelines.`
+          );
+        }
+
+        // Log raw API error details for other errors
+        console.error(`🔥 Raw Gemini API Error:`, {
+          name: apiError?.constructor?.name,
+          message: (apiError as any)?.message,
+          status: (apiError as any)?.status,
+          statusText: (apiError as any)?.statusText,
+          cause: (apiError as any)?.cause,
+          response: (apiError as any)?.response,
+        });
+
+        // If it's an API response error, try to log the raw response body
+        if ((apiError as any)?.response?.body) {
+          console.error(
+            `🔥 Raw response body:`,
+            (apiError as any).response.body
+          );
+        }
+
+        throw apiError; // Re-throw to be caught by outer catch
+      }
+
+      // Log detailed response information for debugging
+      console.log(`📊 Gemini API Response Details:`, {
+        textLength: result.text?.length || 0,
+        finishReason: result.finishReason,
+        usage: result.usage,
+        hasText: !!result.text,
+        textPreview: result.text?.substring(0, 100) || "NO TEXT",
       });
-      console.log(`✅ Successfully generated plot point ${plotPointIndex + 1}`);
-      return text.replace(/^Of course, here it is:/, "");
+
+      if (!result.text || result.text.trim().length === 0) {
+        throw new Error(
+          `Gemini returned empty response. Finish reason: ${
+            result.finishReason
+          }, Usage: ${JSON.stringify(result.usage)}`
+        );
+      }
+
+      console.log(
+        `✅ Successfully generated plot point ${plotPointIndex + 1} (${
+          result.text.length
+        } chars)`
+      );
+      return result.text.replace(/^Of course, here it is:/, "");
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Enhanced error logging
       console.error(
         `❌ Failed to generate plot point ${plotPointIndex + 1} for chapter ${
           chapterIndex + 1
-        } (attempt ${attempt}/${maxRetries}):`,
-        lastError.message
+        } (attempt ${attempt}/${maxRetries})`
       );
+      console.error(`❌ Error type: ${error?.constructor?.name || "Unknown"}`);
+      console.error(`❌ Error message: ${lastError.message}`);
+      console.error(`❌ Error stack: ${lastError.stack || "No stack trace"}`);
+
+      // Log additional error details if available
+      if (error && typeof error === "object") {
+        const errorObj = error as any;
+        if (errorObj.response) {
+          console.error(`❌ API Response Status: ${errorObj.response?.status}`);
+          console.error(
+            `❌ API Response Headers: ${JSON.stringify(
+              errorObj.response?.headers || {}
+            )}`
+          );
+        }
+        if (errorObj.request) {
+          console.error(`❌ Request details available in error object`);
+        }
+      }
 
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
