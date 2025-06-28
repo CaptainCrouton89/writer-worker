@@ -5,6 +5,7 @@
 
 import { generateSequenceMetadata } from "./generation/metadata/metadata.js";
 import { generateChapter } from "./generation/plot/chapter.js";
+import { generateVideoWithRetry } from "./generation/video/videoGenerator.js";
 import {
   fetchChapter,
   getChapterContent,
@@ -16,7 +17,7 @@ import { Tables } from "./lib/supabase/types.js";
 import { Chapter, GenerationJob, Sequence } from "./lib/types.js";
 import { OutlineProcessor } from "./services/outline-processor.js";
 import { SequenceService } from "./services/sequence-service.js";
-import { JOB_STATUS, JOB_STEPS } from "./lib/constants/status.js";
+import { JOB_STATUS, JOB_STEPS, JOB_TYPE, VIDEO_STEPS } from "./lib/constants/status.js";
 
 export class JobProcessorV2 {
   private sequenceService: SequenceService;
@@ -29,81 +30,158 @@ export class JobProcessorV2 {
 
   async processJob(job: GenerationJob): Promise<void> {
     try {
-      console.log(`🔄 Processing job ${job.id} for chapter ${job.chapter_id}`);
+      console.log(`🔄 Processing job ${job.id} of type ${job.job_type || 'story_generation'}`);
 
-      // Step 1: Lock the job
-      await this.lockJob(job.id);
-
-      // Step 2: Validate job has sequence_id
-      if (!job.sequence_id) {
-        throw new Error(`Job ${job.id} is missing sequence_id`);
+      // Route to appropriate processor based on job type
+      if (job.job_type === JOB_TYPE.VIDEO_GENERATION) {
+        await this.processVideoGenerationJob(job);
+        return;
       }
 
-      // Step 3: Fetch the sequence and chapter data
-      const sequence = await this.sequenceService.fetchSequence(
-        job.sequence_id
-      );
-      const chapter = await fetchChapter(job.chapter_id);
-      const chapterIndex = await getChapterIndex(job.chapter_id);
-
-      // Step 4: Process outline (generate/regenerate if needed)
-      await this.updateJobProgress(job.id, 5, JOB_STEPS.PROCESSING_OUTLINE);
-      const outlineResult = await this.outlineProcessor.processOutline(
-        job,
-        sequence,
-        chapterIndex
-      );
-
-      // Step 5: If outline was generated, save it and generate metadata
-      if (outlineResult.wasGenerated) {
-        await this.updateJobProgress(job.id, 20, JOB_STEPS.SAVING_OUTLINE);
-        await this.sequenceService.updateChapters(
-          job.sequence_id,
-          outlineResult.chapters
-        );
-
-        await this.updateJobProgress(job.id, 25, JOB_STEPS.GENERATING_METADATA);
-        await this.generateAndSaveMetadata(
-          job.sequence_id,
-          outlineResult.chapters
-        );
-
-        await this.updateJobProgress(
-          job.id,
-          30,
-          JOB_STEPS.GENERATING_EMBEDDING
-        );
-        await this.generateAndSaveEmbedding(sequence);
-
-        // Mark the prompt as processed if applicable
-        if (outlineResult.processedPromptIndex !== undefined) {
-          await this.sequenceService.markPromptAsProcessed(
-            job.sequence_id,
-            outlineResult.processedPromptIndex
-          );
-        }
-      }
-
-      // Step 6: Generate the chapter content
-      await this.updateJobProgress(
-        job.id,
-        35,
-        JOB_STEPS.GENERATING_CHAPTER_CONTENT
-      );
-      await this.generateChapterContent(
-        job,
-        chapter,
-        chapterIndex,
-        outlineResult.chapters,
-        sequence
-      );
-
-      // Step 7: Complete the job
-      await this.updateJobProgress(job.id, 100, JOB_STEPS.COMPLETING_JOB);
-      await this.completeJob(job.id, job.chapter_id);
+      // Default to story generation for backward compatibility
+      await this.processStoryGenerationJob(job);
     } catch (error) {
       await this.handleJobError(job.id, error as Error);
     }
+  }
+
+  private async processStoryGenerationJob(job: GenerationJob): Promise<void> {
+    console.log(`📚 Processing story generation job ${job.id} for chapter ${job.chapter_id}`);
+
+    // Step 1: Lock the job
+    await this.lockJob(job.id);
+
+    // Step 2: Validate job has sequence_id
+    if (!job.sequence_id) {
+      throw new Error(`Job ${job.id} is missing sequence_id`);
+    }
+
+    // Step 3: Fetch the sequence and chapter data
+    const sequence = await this.sequenceService.fetchSequence(
+      job.sequence_id
+    );
+    const chapter = await fetchChapter(job.chapter_id);
+    const chapterIndex = await getChapterIndex(job.chapter_id);
+
+    // Step 4: Process outline (generate/regenerate if needed)
+    await this.updateJobProgress(job.id, 5, JOB_STEPS.PROCESSING_OUTLINE);
+    const outlineResult = await this.outlineProcessor.processOutline(
+      job,
+      sequence,
+      chapterIndex
+    );
+
+    // Step 5: If outline was generated, save it and generate metadata
+    if (outlineResult.wasGenerated) {
+      await this.updateJobProgress(job.id, 20, JOB_STEPS.SAVING_OUTLINE);
+      await this.sequenceService.updateChapters(
+        job.sequence_id,
+        outlineResult.chapters
+      );
+
+      await this.updateJobProgress(job.id, 25, JOB_STEPS.GENERATING_METADATA);
+      await this.generateAndSaveMetadata(
+        job.sequence_id,
+        outlineResult.chapters
+      );
+
+      await this.updateJobProgress(
+        job.id,
+        30,
+        JOB_STEPS.GENERATING_EMBEDDING
+      );
+      await this.generateAndSaveEmbedding(sequence);
+
+      // Mark the prompt as processed if applicable
+      if (outlineResult.processedPromptIndex !== undefined) {
+        await this.sequenceService.markPromptAsProcessed(
+          job.sequence_id,
+          outlineResult.processedPromptIndex
+        );
+      }
+    }
+
+    // Step 6: Generate the chapter content
+    await this.updateJobProgress(
+      job.id,
+      35,
+      JOB_STEPS.GENERATING_CHAPTER_CONTENT
+    );
+    await this.generateChapterContent(
+      job,
+      chapter,
+      chapterIndex,
+      outlineResult.chapters,
+      sequence
+    );
+
+    // Step 7: Complete the job
+    await this.updateJobProgress(job.id, 100, JOB_STEPS.COMPLETING_JOB);
+    await this.completeJob(job.id, job.chapter_id);
+  }
+
+  private async processVideoGenerationJob(job: GenerationJob): Promise<void> {
+    console.log(`🎬 Processing video generation job ${job.id} for quote ${job.quote_id}`);
+
+    // Step 1: Lock the job
+    await this.lockJob(job.id);
+
+    // Step 2: Validate required fields for video generation
+    if (!job.quote_id) {
+      throw new Error(`Video generation job ${job.id} is missing quote_id`);
+    }
+    if (!job.chapter_id) {
+      throw new Error(`Video generation job ${job.id} is missing chapter_id`);
+    }
+    if (!job.sequence_id) {
+      throw new Error(`Video generation job ${job.id} is missing sequence_id`);
+    }
+
+    // Step 3: Fetch context data
+    await this.updateJobProgress(job.id, 10, VIDEO_STEPS.FETCHING_CONTEXT);
+    
+    const [quote, chapter, sequence] = await Promise.all([
+      this.fetchFeaturedQuote(job.quote_id),
+      fetchChapter(job.chapter_id),
+      this.sequenceService.fetchSequence(job.sequence_id),
+    ]);
+
+    // Step 4: Get chapter content for context
+    const chapterContent = await getChapterContent(job.chapter_id);
+
+    // Step 5: Generate video
+    await this.updateJobProgress(job.id, 30, VIDEO_STEPS.ENHANCING_PROMPT);
+    
+    const videoUrl = await generateVideoWithRetry({
+      quote,
+      chapterContent,
+      storyOutline: sequence.chapters,
+      sequenceTitle: sequence.title || undefined,
+    });
+
+    // Step 6: Complete the job
+    await this.updateJobProgress(job.id, 100, VIDEO_STEPS.COMPLETED);
+    await this.completeJob(job.id, job.chapter_id);
+
+    console.log(`✅ Video generation completed for quote ${job.quote_id}: ${videoUrl}`);
+  }
+
+  private async fetchFeaturedQuote(quoteId: string): Promise<Tables<"featured_quotes">> {
+    const { data, error } = await supabase
+      .from("featured_quotes")
+      .select("*")
+      .eq("id", quoteId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch featured quote ${quoteId}: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error(`Featured quote ${quoteId} not found`);
+    }
+
+    return data;
   }
 
   private async lockJob(jobId: string): Promise<void> {
