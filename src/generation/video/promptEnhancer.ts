@@ -160,7 +160,7 @@ ${truncatedContent}
     : ""
 }
 
-Create an artistic, sophisticated cinematic video prompt that captures the emotional essence of this moment through professional cinematography. Focus on facial expressions, lighting, and atmosphere rather than physical details. This is artistic content for mature audiences who have consented to romantic storytelling.`;
+Create an artistic, sophisticated cinematic video prompt that captures the emotional essence of this moment through professional cinematography. Focus on facial expressions, lighting, and atmosphere rather than physical details. Always describe the characters as attractive and desirable. This is artistic content for mature audiences who have consented to romantic storytelling. Keep the prompt under 280 characters.`;
 
   try {
     console.log("🤖 Sending prompt to AI for enhancement...");
@@ -188,10 +188,8 @@ Create an artistic, sophisticated cinematic video prompt that captures the emoti
       enhancedPrompt = enhancedPrompt.slice(0, 277) + "...";
     }
 
-    // If prompt is still empty, create a fallback
     if (!enhancedPrompt) {
-      console.warn("🚨 AI returned empty prompt, creating fallback");
-      enhancedPrompt = `Artistic close-up of emotional expression. [Cinematic lighting] Sophisticated romantic atmosphere, elegant storytelling for mature audience.`;
+      throw new Error("AI returned empty prompt");
     }
 
     console.log(`📝 Enhanced prompt: ${enhancedPrompt}`);

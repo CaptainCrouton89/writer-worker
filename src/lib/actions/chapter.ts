@@ -46,19 +46,22 @@ export async function getChapterIndex(chapterId: string): Promise<number> {
 }
 
 export async function getChapterContent(
-  chapterParentId: string
+  chapterId: string
 ): Promise<string> {
+  console.log(`📖 Getting content for chapter ${chapterId}`);
+  
   const { data, error } = await supabase
     .from("chapters")
     .select("content")
-    .eq("id", chapterParentId)
+    .eq("id", chapterId)
     .single();
 
   if (error) {
     throw new Error(
-      `Failed to get previous chapter content for ${chapterParentId}: ${error.message}`
+      `Failed to get chapter content for ${chapterId}: ${error.message}`
     );
   }
 
+  console.log(`✅ Retrieved content for chapter ${chapterId} (${data?.content?.length || 0} characters)`);
   return data?.content || "";
 }
