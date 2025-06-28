@@ -1,4 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
 import { Chapter, UserPrompt } from "../../lib/types.js";
@@ -203,14 +204,11 @@ export const generatePlotPoint = async (
       console.log("prompt:", prompt);
       console.log("system:", system);
 
-      const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
-      });
-
       let result;
       try {
+        // Try with Gemini first
         result = await generateText({
-          model: openrouter("google/gemini-2.5-pro"),
+          model: google("gemini-2.5-pro"),
           prompt,
           system,
           temperature: 0.8,
@@ -218,7 +216,24 @@ export const generatePlotPoint = async (
           topK: 50,
           seed: Math.floor(Math.random() * 1000000),
         });
-      } catch (apiError) {
+      } catch (geminiError) {
+        console.log(`🔄 Gemini failed, falling back to OpenRouter...`);
+        
+        const openrouter = createOpenRouter({
+          apiKey: process.env.OPENROUTER_API_KEY,
+        });
+
+        try {
+          result = await generateText({
+            model: openrouter("google/gemini-2.5-pro"),
+            prompt,
+            system,
+            temperature: 0.8,
+            topP: 0.9,
+            topK: 50,
+            seed: Math.floor(Math.random() * 1000000),
+          });
+        } catch (apiError) {
         // Check if this is a content block error
         const errorCause = (apiError as any)?.cause;
         const errorValue = errorCause?.value;
@@ -252,6 +267,7 @@ export const generatePlotPoint = async (
         }
 
         throw apiError; // Re-throw to be caught by outer catch
+      }
       }
 
       // Log detailed response information for debugging
