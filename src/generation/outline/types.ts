@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Chapter } from "../../lib/types";
 
 export const StoryOutlineSchema = z.object({
   chapters: z.array(
@@ -8,3 +9,31 @@ export const StoryOutlineSchema = z.object({
     })
   ),
 });
+
+export const parseOutlineText = (text: string): Chapter[] => {
+  // Remove preamble text like "Of course! Here is the list:" or "Of course! Here it is:"
+  const cleanText = text.replace(/^.*?(?=Chapter \d+:)/s, '').trim();
+  
+  // Split by chapter headers
+  const chapterSections = cleanText.split(/(?=Chapter \d+:)/);
+  
+  const chapters: Chapter[] = [];
+  
+  for (const section of chapterSections) {
+    if (!section.trim()) continue;
+    
+    // Extract chapter title
+    const titleMatch = section.match(/Chapter \d+:\s*(.+?)(?:\n|$)/);
+    if (!titleMatch) continue;
+    
+    const name = titleMatch[1].trim();
+    
+    // Extract plot points (lines starting with -)
+    const plotPointMatches = section.match(/^-\s*(.+)$/gm);
+    const plotPoints = plotPointMatches ? plotPointMatches.map(match => match.replace(/^-\s*/, '').trim()) : [];
+    
+    chapters.push({ name, plotPoints });
+  }
+  
+  return chapters;
+};

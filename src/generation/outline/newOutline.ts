@@ -1,8 +1,8 @@
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter } from "../../lib/types";
-import { StoryOutlineSchema } from "./types";
+import { parseOutlineText } from "./types";
 
 const spiceGuidelines = [
   `
@@ -122,16 +122,36 @@ export const generateNewOutline = async (storyOutline: {
       console.log(
         `🔮 Generating new story outline with Gemini (attempt ${attempt}/${MAX_RETRIES})`
       );
-      const { object } = await generateObject({
+      const { text } = await generateText({
         model: google("gemini-2.5-pro"),
         system,
         prompt,
-        schema: StoryOutlineSchema,
         temperature: 0.5,
         seed: Math.floor(Math.random() * 1000000),
       });
+      
+      const chapters = parseOutlineText(text);
+      
+      // Validate we got the expected number of chapters
+      const expectedChapterCount = STORY_LENGTH_CONFIG[storyOutline.story_length].chapterCount;
+      if (chapters.length !== expectedChapterCount) {
+        throw new Error(
+          `Chapter count mismatch: expected ${expectedChapterCount}, got ${chapters.length}`
+        );
+      }
+      
+      // Validate each chapter has the expected number of plot points
+      const expectedPlotPoints = STORY_LENGTH_CONFIG[storyOutline.story_length].bulletsPerChapter;
+      for (let i = 0; i < chapters.length; i++) {
+        if (chapters[i].plotPoints.length !== expectedPlotPoints) {
+          throw new Error(
+            `Chapter ${i + 1} plot point count mismatch: expected ${expectedPlotPoints}, got ${chapters[i].plotPoints.length}`
+          );
+        }
+      }
+      
       console.log("✅ Successfully generated new outline");
-      return object.chapters;
+      return chapters;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.error(

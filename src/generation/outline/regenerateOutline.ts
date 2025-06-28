@@ -1,8 +1,8 @@
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter, UserPrompt } from "../../lib/types";
-import { StoryOutlineSchema } from "./types";
+import { parseOutlineText } from "./types";
 
 const spiceGuidelines = [
   `
@@ -172,20 +172,39 @@ export const regenerateOutline = async (
           insertionIndex + 1
         } (attempt ${attempt}/${MAX_RETRIES})`
       );
-      const { object } = await generateObject({
+      const { text } = await generateText({
         model: google("gemini-2.5-pro"),
         system,
         prompt,
-        schema: StoryOutlineSchema,
         temperature: 0.4,
         seed: Math.floor(Math.random() * 1000000),
       });
+      
+      const generatedChapters = parseOutlineText(text);
+      
+      // Validate we got the expected number of chapters
+      if (generatedChapters.length !== remainingChapterCount) {
+        throw new Error(
+          `Generated chapter count mismatch: expected ${remainingChapterCount}, got ${generatedChapters.length}`
+        );
+      }
+      
+      // Validate each chapter has the expected number of plot points
+      const expectedPlotPoints = STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter;
+      for (let i = 0; i < generatedChapters.length; i++) {
+        if (generatedChapters[i].plotPoints.length !== expectedPlotPoints) {
+          throw new Error(
+            `Generated chapter ${i + insertionIndex + 1} plot point count mismatch: expected ${expectedPlotPoints}, got ${generatedChapters[i].plotPoints.length}`
+          );
+        }
+      }
+      
       console.log(
-        `✅ Successfully regenerated ${object.chapters.length} chapters`
+        `✅ Successfully regenerated ${generatedChapters.length} chapters`
       );
 
       // Combine the kept chapters with the newly generated ones
-      const finalChapters = [...chaptersToKeep, ...object.chapters];
+      const finalChapters = [...chaptersToKeep, ...generatedChapters];
 
       // Validate we have the correct total number of chapters
       if (finalChapters.length !== totalChapterCount) {
