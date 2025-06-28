@@ -11,8 +11,11 @@ export const StoryOutlineSchema = z.object({
 });
 
 export const parseOutlineText = (text: string): Chapter[] => {
+  // Strip markdown formatting first
+  const unformattedText = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '');
+  
   // Remove preamble text like "Of course! Here is the list:" or "Of course! Here it is:"
-  const cleanText = text.replace(/^.*?(?=Chapter \d+:)/s, '').trim();
+  const cleanText = unformattedText.replace(/^.*?(?=Chapter \d+:)/s, '').trim();
   
   // Split by chapter headers
   const chapterSections = cleanText.split(/(?=Chapter \d+:)/);
