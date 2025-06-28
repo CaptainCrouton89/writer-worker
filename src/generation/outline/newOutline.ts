@@ -22,7 +22,8 @@ const spiceGuidelines = [
 - Early chapters: Establish characters and plot with underlying sexual tension
 - Mid-story: Include passionate encounters with increasing sexual content
 - Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
-- Maintain character development alongside the sexual progression with proper pacing`,
+- Maintain character development alongside the sexual progression with proper pacing
+- The story is for a novel. This means that themes, plotline, and/or characters should be complex. Stories should have some complexity to them.`,
 ];
 
 const systemPrompt = (outline: { spiceLevel: number; storyLength: number }) => `
@@ -51,7 +52,7 @@ ${spiceGuidelines[outline.spiceLevel]}
 Write concise bullet points that are 1-2 sentences long. Each should:
 - Provide concrete story events that can be expanded into detailed content
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
--Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Aim for 2 sentences per bullet.
+-Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Aim for 2 sentences per bullet. Do not be vague.
 </bullet_point_style>
 
 <output_format>
@@ -129,27 +130,33 @@ export const generateNewOutline = async (storyOutline: {
         temperature: 0.5,
         seed: Math.floor(Math.random() * 1000000),
       });
-      
+
       const chapters = parseOutlineText(text);
-      
+
       // Validate we got the expected number of chapters
-      const expectedChapterCount = STORY_LENGTH_CONFIG[storyOutline.story_length].chapterCount;
+      const expectedChapterCount =
+        STORY_LENGTH_CONFIG[storyOutline.story_length].chapterCount;
       if (chapters.length !== expectedChapterCount) {
         throw new Error(
           `Chapter count mismatch: expected ${expectedChapterCount}, got ${chapters.length}`
         );
       }
-      
+
       // Validate each chapter has the expected number of plot points
-      const expectedPlotPoints = STORY_LENGTH_CONFIG[storyOutline.story_length].bulletsPerChapter;
+      const expectedPlotPoints =
+        STORY_LENGTH_CONFIG[storyOutline.story_length].bulletsPerChapter;
       for (let i = 0; i < chapters.length; i++) {
         if (chapters[i].plotPoints.length !== expectedPlotPoints) {
           throw new Error(
-            `Chapter ${i + 1} plot point count mismatch: expected ${expectedPlotPoints}, got ${chapters[i].plotPoints.length}`
+            `Chapter ${
+              i + 1
+            } plot point count mismatch: expected ${expectedPlotPoints}, got ${
+              chapters[i].plotPoints.length
+            }`
           );
         }
       }
-      
+
       console.log("✅ Successfully generated new outline");
       return chapters;
     } catch (error) {
