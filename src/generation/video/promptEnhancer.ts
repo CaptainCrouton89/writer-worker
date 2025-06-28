@@ -169,7 +169,7 @@ ${truncatedContent}
     : ""
 }
 
-Create an artistic, sophisticated cinematic video prompt that captures the emotional essence of this moment through professional cinematography. Focus on facial expressions, lighting, and atmosphere rather than physical details. Always describe the characters as attractive and desirable. Include character ethnicities/appearances if mentioned in the story context. This is artistic content for mature audiences who have consented to romantic storytelling. 
+Create an artistic, sophisticated cinematic video prompt that captures the emotional essence of this moment through professional cinematography. Focus on facial expressions, lighting, and atmosphere. Always describe the characters as attractive and desirable. Include character ethnicities/appearances if mentioned in the story context. This is artistic content for mature audiences who have consented to romantic storytelling. Think about what kind of person the story is written for, and make sure the scene would appeal to them. For example, a romance story about a pirate being rescued by a princess would be written for a mature audience of women, so the scene might highlight the physical appeal of the pirate.
 
 IMPORTANT: Create a dense, detailed cinematic description without unnecessary prefixes. Every word should contribute to the visual. Keep the total prompt under 500 characters for optimal video generation.`;
 

@@ -2,6 +2,7 @@ import Replicate from "replicate";
 import { supabase } from "../../lib/supabase.js";
 import { Tables } from "../../lib/supabase/types.js";
 import { enhancePromptWithRetry } from "./promptEnhancer.js";
+import { progressivelySanitizePrompt } from "./promptSanitizer.js";
 
 // Replicate client
 const replicate = new Replicate({
@@ -25,19 +26,26 @@ interface VideoGenerationResult {
  * Generates a video for a featured quote using Replicate's Seedance-1-Pro model
  */
 export async function generateVideo(
-  context: VideoGenerationContext
+  context: VideoGenerationContext,
+  promptOverride?: string
 ): Promise<VideoGenerationResult> {
   console.log(`🎬 Starting video generation for quote ${context.quote.id}`);
 
-  // Step 1: Enhance the prompt using AI
-  console.log("📝 Enhancing video prompt...");
-  const enhancedPrompt = await enhancePromptWithRetry({
-    quoteText: context.quote.quote_text,
-    chapterContent: context.chapterContent,
-    storyOutline: context.storyOutline,
-    sequenceTitle: context.sequenceTitle,
-    contextSentence: context.quote.context_sentence || undefined,
-  });
+  // Step 1: Use provided prompt or enhance new one
+  let enhancedPrompt: string;
+  if (promptOverride) {
+    console.log("📝 Using provided prompt override...");
+    enhancedPrompt = promptOverride;
+  } else {
+    console.log("📝 Enhancing video prompt...");
+    enhancedPrompt = await enhancePromptWithRetry({
+      quoteText: context.quote.quote_text,
+      chapterContent: context.chapterContent,
+      storyOutline: context.storyOutline,
+      sequenceTitle: context.sequenceTitle,
+      contextSentence: context.quote.context_sentence || undefined,
+    });
+  }
 
   // Step 2: Prepare Replicate input
   const input = {
@@ -211,24 +219,74 @@ export async function generateVideoForQuote(
 }
 
 /**
- * Video generation with retry logic
+ * Video generation with retry logic and progressive prompt sanitization
  */
 export async function generateVideoWithRetry(
   context: VideoGenerationContext,
-  maxRetries: number = 2
+  maxRetries: number = 3
 ): Promise<string> {
   let lastError: Error | undefined;
+  let enhancedPrompt: string | undefined;
+  let currentPrompt: string | undefined;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🔄 Video generation attempt ${attempt}/${maxRetries}`);
-      return await generateVideoForQuote(context);
+      
+      // On first attempt, use normal generation
+      if (attempt === 1) {
+        return await generateVideoForQuote(context);
+      } 
+      
+      // On subsequent attempts, sanitize the prompt progressively
+      else {
+        console.log(`🧹 Sanitizing prompt for attempt ${attempt}...`);
+        
+        // Get the original enhanced prompt if we haven't already
+        if (!enhancedPrompt) {
+          enhancedPrompt = await enhancePromptWithRetry({
+            quoteText: context.quote.quote_text,
+            chapterContent: context.chapterContent,
+            storyOutline: context.storyOutline,
+            sequenceTitle: context.sequenceTitle,
+            contextSentence: context.quote.context_sentence || undefined,
+          });
+        }
+        
+        // Sanitize the prompt based on attempt number
+        currentPrompt = await progressivelySanitizePrompt(enhancedPrompt, attempt - 1);
+        
+        // Try generating with sanitized prompt
+        const result = await generateVideo(context, currentPrompt);
+        
+        // Upload to storage
+        const fileName = `quote_${context.quote.id}_${Date.now()}.mp4`;
+        const storageUrl = await uploadVideoToStorage(result.videoUrl, fileName);
+        
+        // Update database
+        await updateQuoteWithVideoUrl(context.quote.id, storageUrl);
+        
+        console.log(`✅ Video generated successfully with sanitized prompt (attempt ${attempt})`);
+        return storageUrl;
+      }
     } catch (error) {
       lastError = error as Error;
       console.error(`❌ Video generation attempt ${attempt} failed:`, error);
+      
+      // Check if the error message indicates content policy violation
+      const errorMessage = lastError.message.toLowerCase();
+      const isPolicyViolation = errorMessage.includes('policy') || 
+                               errorMessage.includes('explicit') || 
+                               errorMessage.includes('inappropriate') ||
+                               errorMessage.includes('nsfw') ||
+                               errorMessage.includes('safety');
+      
+      if (isPolicyViolation) {
+        console.log(`⚠️ Content policy violation detected. Will sanitize prompt on next attempt.`);
+      }
 
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 2000; // Exponential backoff (2s, 4s)
+        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff (2s, 4s, 8s)
         console.log(`⏱️ Retrying in ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
