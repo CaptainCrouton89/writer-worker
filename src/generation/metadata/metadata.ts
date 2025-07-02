@@ -28,7 +28,9 @@ const TagsSchema = z.object({
 const TriggerWarningsSchema = z.object({
   trigger_warnings: z
     .array(z.string())
-    .describe("A list of content warnings for potentially sensitive themes"),
+    .describe(
+      "A list of 0-5 content warnings for potentially sensitive themes"
+    ),
 });
 
 // Schema for explicit content detection
