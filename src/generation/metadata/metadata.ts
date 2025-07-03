@@ -2,6 +2,7 @@ import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
 
 // Schema for title and description only
 const TitleDescriptionSchema = z.object({
@@ -65,15 +66,48 @@ const SequenceMetadataSchema = z.object({
 
 // Generate title and description only
 async function generateTitleDescription(
-  outline: string
+  outline: string,
+  storyLength: number = 0
 ): Promise<z.infer<typeof TitleDescriptionSchema>> {
-  const systemPrompt = `## Identity
-You are a romance and erotic fiction title specialist with expertise in creating compelling, marketable titles and descriptions.
-
-### Title Conventions
+  const storyConfig = STORY_LENGTH_CONFIG[storyLength];
+  const storyType = storyConfig.type;
+  
+  // Create conditional system prompts based on story length
+  let titleConventions = "";
+  
+  if (storyLength === 0) {
+    // Short story - keep existing clickbait style
+    titleConventions = `### Title Conventions
 - Create clickbait-style titles that grab attention immediately
 - Write it to appeal to a female audience
 - Be descriptive in the title; the readers are scanning quickly
+- Focus on the immediate hook or central situation
+- Make it punchy and direct for quick consumption`;
+  } else if (storyLength === 1) {
+    // Novella - balance between clickbait and literary
+    titleConventions = `### Title Conventions
+- Create intriguing titles that hint at story complexity
+- Write it to appeal to a female audience
+- Balance descriptive elements with emotional intrigue
+- Suggest character development and relationship evolution
+- Make it engaging but not overly clickbait-y`;
+  } else {
+    // Slow burn/novel - more literary, book-like titles
+    titleConventions = `### Title Conventions
+- Create literary-style titles appropriate for full-length novels
+- Write it to appeal to a female audience
+- Focus on emotional themes, character journeys, or symbolic elements
+- Use more sophisticated, book-like naming conventions
+- Emphasize the emotional arc and relationship depth
+- Think like traditional romance novel titles`;
+  }
+  
+  const systemPrompt = `## Identity
+You are a romance and erotic fiction title specialist with expertise in creating compelling, marketable titles and descriptions.
+
+This is a ${storyType} with ${storyConfig.chapterCount} chapters.
+
+${titleConventions}
 
 ### Description Best Practices
 - Start with a direct statement of what happens in the story
@@ -297,7 +331,8 @@ ${outline}
 
 // Main function that orchestrates parallel calls
 export const generateSequenceMetadata = async (
-  outline: string
+  outline: string,
+  storyLength: number = 0
 ): Promise<z.infer<typeof SequenceMetadataSchema>> => {
   console.log("🏷️ Generating sequence metadata with parallel AI calls");
 
@@ -309,7 +344,7 @@ export const generateSequenceMetadata = async (
       triggerWarningsResult,
       explicitContentResult,
     ] = await Promise.all([
-      generateTitleDescription(outline),
+      generateTitleDescription(outline, storyLength),
       generateTags(outline),
       generateTriggerWarnings(outline),
       detectExplicitContent(outline),

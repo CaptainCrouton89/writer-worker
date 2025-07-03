@@ -82,7 +82,8 @@ export class JobProcessorV2 {
       await this.updateJobProgress(job.id, 25, JOB_STEPS.GENERATING_METADATA);
       await this.generateAndSaveMetadata(
         job.sequence_id,
-        outlineResult.chapters
+        outlineResult.chapters,
+        sequence
       );
 
       await this.updateJobProgress(
@@ -204,13 +205,20 @@ export class JobProcessorV2 {
 
   private async generateAndSaveMetadata(
     sequenceId: string,
-    chapters: Chapter[]
+    chapters: Chapter[],
+    sequence: Sequence
   ): Promise<void> {
     console.log(`🏷️ Generating metadata for sequence ${sequenceId}`);
 
+    // Extract story length from the latest user prompt
+    const storyLength = sequence.user_prompt_history && sequence.user_prompt_history.length > 0
+      ? sequence.user_prompt_history[sequence.user_prompt_history.length - 1].story_length
+      : 0;
+
     const outlineData = { chapters };
     const metadata = await generateSequenceMetadata(
-      JSON.stringify(outlineData)
+      JSON.stringify(outlineData),
+      storyLength
     );
     console.log(`✅ Generated metadata:`, metadata);
 
