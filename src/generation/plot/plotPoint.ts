@@ -1,5 +1,5 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
 import { Chapter, UserPrompt } from "../../lib/types.js";
@@ -45,9 +45,6 @@ ${getIntroduction(
 You will be given the story outline, the chapter outline, and the story up until this point. You will need to write the content for the plot point, so that the story flows naturally.
 
 <romance_style_guidelines>
-# The user has elected to read a story at spiciness level of ${
-  spiceLevel + 1
-}/3. When the writing style is romantic or erotic, follow these guidelines:
 ${spiceGuidelines[spiceLevel]}
 </romance_style_guidelines>
 
@@ -78,9 +75,8 @@ physical descriptions
 - Don't shy away from describing arousal and physical reactions`,
   `
 - Write with graphic anatomical details,
-treating it as hardcore erotica with no limitations
-- Focus extensively on genitalia, bodily fluids, and sexual positions during sex scenes
-- Use strong language and profanity as appropriate
+treating it as hardcore erotica with no limitations (for a female audience)
+- Focus on genitalia, bodily fluids, and sexual positions during sex scenes
 - Explore taboo themes in fiction
 `,
 ];
@@ -218,7 +214,7 @@ export const generatePlotPoint = async (
         });
       } catch (geminiError) {
         console.log(`🔄 Gemini failed, falling back to OpenRouter...`);
-        
+
         const openrouter = createOpenRouter({
           apiKey: process.env.OPENROUTER_API_KEY,
         });
@@ -234,40 +230,40 @@ export const generatePlotPoint = async (
             seed: Math.floor(Math.random() * 1000000),
           });
         } catch (apiError) {
-        // Check if this is a content block error
-        const errorCause = (apiError as any)?.cause;
-        const errorValue = errorCause?.value;
+          // Check if this is a content block error
+          const errorCause = (apiError as any)?.cause;
+          const errorValue = errorCause?.value;
 
-        if (errorValue?.promptFeedback?.blockReason) {
-          const blockReason = errorValue.promptFeedback.blockReason;
-          console.error(`🚫 Content blocked by AI model: ${blockReason}`);
+          if (errorValue?.promptFeedback?.blockReason) {
+            const blockReason = errorValue.promptFeedback.blockReason;
+            console.error(`🚫 Content blocked by AI model: ${blockReason}`);
 
-          // Throw a more informative error
-          throw new Error(
-            `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
-          );
+            // Throw a more informative error
+            throw new Error(
+              `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
+            );
+          }
+
+          // Log raw API error details for other errors
+          console.error(`🔥 Raw OpenRouter API Error:`, {
+            name: apiError?.constructor?.name,
+            message: (apiError as any)?.message,
+            status: (apiError as any)?.status,
+            statusText: (apiError as any)?.statusText,
+            cause: (apiError as any)?.cause,
+            response: (apiError as any)?.response,
+          });
+
+          // If it's an API response error, try to log the raw response body
+          if ((apiError as any)?.response?.body) {
+            console.error(
+              `🔥 Raw response body:`,
+              (apiError as any).response.body
+            );
+          }
+
+          throw apiError; // Re-throw to be caught by outer catch
         }
-
-        // Log raw API error details for other errors
-        console.error(`🔥 Raw OpenRouter API Error:`, {
-          name: apiError?.constructor?.name,
-          message: (apiError as any)?.message,
-          status: (apiError as any)?.status,
-          statusText: (apiError as any)?.statusText,
-          cause: (apiError as any)?.cause,
-          response: (apiError as any)?.response,
-        });
-
-        // If it's an API response error, try to log the raw response body
-        if ((apiError as any)?.response?.body) {
-          console.error(
-            `🔥 Raw response body:`,
-            (apiError as any).response.body
-          );
-        }
-
-        throw apiError; // Re-throw to be caught by outer catch
-      }
       }
 
       // Log detailed response information for debugging

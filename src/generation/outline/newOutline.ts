@@ -23,7 +23,7 @@ const spiceGuidelines = [
 - Mid-story: Include passionate encounters with increasing sexual content
 - Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
 - Maintain character development alongside the sexual progression with proper pacing
-- The story is for a novel. This means that themes, plotline, and/or characters should be complex. Stories should have some complexity to them.`,
+- The story is for a novel. Explore complex themes and relationships.`,
 ];
 
 const systemPrompt = (outline: { spiceLevel: number; storyLength: number }) => `
