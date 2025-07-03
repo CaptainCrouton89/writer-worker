@@ -28,6 +28,7 @@ const getIntroduction = (
 const systemPrompt = (
   length: number,
   spiceLevel: number,
+  style: number,
   firstChapter: boolean,
   firstPlotPoint: boolean,
   middlePlotPoint: boolean,
@@ -46,6 +47,7 @@ You will be given the story outline, the chapter outline, and the story up until
 
 <romance_style_guidelines>
 ${spiceGuidelines[spiceLevel]}
+${styleGuidelines[style]}
 </romance_style_guidelines>
 
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
@@ -86,6 +88,8 @@ const lengthGuidelines = [
   `2 pages of content (500-600 words)`,
   `2.5 pages of content (500-700 words)`,
 ];
+
+const styleGuidelines = [`- Write for a female audience`, ``, ``];
 
 const getPrompt = (
   length: number,
@@ -153,6 +157,7 @@ export const generatePlotPoint = async (
   const system = systemPrompt(
     userPrompt.story_length,
     userPrompt.spice_level,
+    userPrompt.style,
     chapterIndex === 0,
     plotPointIndex === 0,
     plotPointIndex > 0 &&
