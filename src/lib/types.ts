@@ -7,12 +7,13 @@ export interface Chapter {
 }
 
 /** Example:
- * [{"tags": ["forbidden lovers", "romance"], "prompt": "user original prompt string", "processed": true, "spice_level": 1, "processed_at": 1750533418000, "story_length": 1, "insertion_chapter_index": 0}]
+ * [{"tags": ["forbidden lovers", "romance"], "style": 0, "prompt": "user original prompt string", "processed": true, "spice_level": 1, "processed_at": 1750533418000, "story_length": 1, "insertion_chapter_index": 0}]
  */
 
 export interface UserPrompt {
   prompt: string;
   tags: string[];
+  style: number;
   spice_level: number;
   story_length: number;
   insertion_chapter_index: number;
