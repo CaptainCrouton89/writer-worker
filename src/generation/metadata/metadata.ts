@@ -242,13 +242,14 @@ Guidelines:
 - Use specific terms, not vague warnings
 - Consensual BDSM is not abuse
 - 1-2 words maximum
-- Age gap warnings for 10+ year differences with power dynamics`;
+- Age gap warnings for 10+ year differences with power dynamics
+- Do not include trigger warnings if they are not present in the story`;
 
   const prompt = `Review this story outline and identify any content requiring trigger warnings:
 
 ${outline}
 
-Only list common, well-known trigger warnings, or none at all.`;
+Only list common, well-known trigger warnings, or none at all if none exist.`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
