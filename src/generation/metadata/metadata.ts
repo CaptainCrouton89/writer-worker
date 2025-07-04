@@ -38,7 +38,7 @@ const TriggerWarningsSchema = z.object({
 const ExplicitContentSchema = z.object({
   is_sexually_explicit: z
     .boolean()
-    .describe("Whether the story contains explicit sexual content"),
+    .describe("Whether the story contains R-rated sexual content"),
 });
 
 // Combined schema for backward compatibility
@@ -71,10 +71,10 @@ async function generateTitleDescription(
 ): Promise<z.infer<typeof TitleDescriptionSchema>> {
   const storyConfig = STORY_LENGTH_CONFIG[storyLength];
   const storyType = storyConfig.type;
-  
+
   // Create conditional system prompts based on story length
   let titleConventions = "";
-  
+
   if (storyLength === 0) {
     // Short story - keep existing clickbait style
     titleConventions = `### Title Conventions
@@ -101,7 +101,7 @@ async function generateTitleDescription(
 - Emphasize the emotional arc and relationship depth
 - Think like traditional romance novel titles`;
   }
-  
+
   const systemPrompt = `## Identity
 You are a romance and erotic fiction title specialist with expertise in creating compelling, marketable titles and descriptions.
 
@@ -246,7 +246,9 @@ Guidelines:
 
   const prompt = `Review this story outline and identify any content requiring trigger warnings:
 
-${outline}`;
+${outline}
+
+Only list common, well-known trigger warnings, or none at all.`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
@@ -285,27 +287,22 @@ ${outline}`;
 async function detectExplicitContent(
   outline: string
 ): Promise<z.infer<typeof ExplicitContentSchema>> {
-  const systemPrompt = `You are a content classifier. Determine if stories contain sexually explicit content. Be consistent and accurate in your classification.`;
+  const systemPrompt = `You are a content classifier. Determine if stories contain R-rated, hardcore sexually explicit content.`;
 
-  const prompt = `Determine if this story contains sexually explicit content.
+  const prompt = `Determine if this story contains R-rated, hardcore sexually explicit content.
 
 Story Outline:
-${outline}
-
-**Sexually Explicit Flag**: Determine if this is sexually explicit content:
-- TRUE: Contains graphic sexual descriptions, detailed intimate acts, explicit language about body parts/sexual acts
-- FALSE: Contains only romantic tension, kissing, fade-to-black scenes, or mild sensual content`;
-
+${outline}`;
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🔞 Detecting explicit content with GPT-4.1-mini (attempt ${attempt}/${maxRetries})`
+        `🔞 Detecting explicit content with GPT-4.1-nano (attempt ${attempt}/${maxRetries})`
       );
       const { object } = await generateObject({
-        model: openai("gpt-4.1-mini"),
+        model: openai("gpt-4.1-nano"),
         system: systemPrompt,
         prompt,
         schema: ExplicitContentSchema,
