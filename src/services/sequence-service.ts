@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase.js";
-import { Tables, Json } from "../lib/supabase/types.js";
-import { UserPromptHistory, Chapter, Sequence, UserPrompt } from "../lib/types.js";
+import { Json, Tables } from "../lib/supabase/types.js";
+import { Chapter, Sequence, UserPrompt } from "../lib/types.js";
 
 export class SequenceService {
   async fetchSequence(sequenceId: string): Promise<Sequence> {
@@ -11,7 +11,9 @@ export class SequenceService {
       .single();
 
     if (error) {
-      throw new Error(`Failed to fetch sequence ${sequenceId}: ${error.message}`);
+      throw new Error(
+        `Failed to fetch sequence ${sequenceId}: ${error.message}`
+      );
     }
 
     if (!data) {
@@ -34,7 +36,9 @@ export class SequenceService {
       .eq("id", sequenceId);
 
     if (error) {
-      throw new Error(`Failed to update sequence ${sequenceId}: ${error.message}`);
+      throw new Error(
+        `Failed to update sequence ${sequenceId}: ${error.message}`
+      );
     }
   }
 
@@ -43,7 +47,7 @@ export class SequenceService {
       return [];
     }
 
-    return sequence.user_prompt_history.filter(prompt => !prompt.processed);
+    return sequence.user_prompt_history.filter((prompt) => !prompt.processed);
   }
 
   async markPromptAsProcessed(
@@ -64,6 +68,7 @@ export class SequenceService {
       spice_level: currentPrompt.spice_level,
       story_length: currentPrompt.story_length,
       insertion_chapter_index: currentPrompt.insertion_chapter_index,
+      style: currentPrompt.style,
       processed: true,
       processed_at: Date.now(),
     };
@@ -74,10 +79,7 @@ export class SequenceService {
     });
   }
 
-  async updateChapters(
-    sequenceId: string,
-    chapters: Chapter[]
-  ): Promise<void> {
+  async updateChapters(sequenceId: string, chapters: Chapter[]): Promise<void> {
     await this.updateSequence(sequenceId, {
       chapters: chapters as unknown as Json,
     });
@@ -119,10 +121,7 @@ export class SequenceService {
     await this.updateSequence(sequenceId, updates);
   }
 
-  async updateEmbedding(
-    sequenceId: string,
-    embedding: string
-  ): Promise<void> {
+  async updateEmbedding(sequenceId: string, embedding: string): Promise<void> {
     await this.updateSequence(sequenceId, { embedding });
   }
 }
