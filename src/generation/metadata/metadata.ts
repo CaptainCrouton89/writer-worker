@@ -41,6 +41,25 @@ const ExplicitContentSchema = z.object({
     .describe("Whether the story contains R-rated sexual content"),
 });
 
+// Schema for target audience
+const TargetAudienceSchema = z.object({
+  target_audience: z
+    .array(
+      z.enum([
+        "straight-women",
+        "straight-men",
+        "bi-women",
+        "bi-men",
+        "gay-men",
+        "lesbian",
+        "queer",
+      ])
+    )
+    .describe(
+      "Array of target audiences who would most likely enjoy this story"
+    ),
+});
+
 // Combined schema for backward compatibility
 const SequenceMetadataSchema = z.object({
   title: z.string().describe("A compelling, concise title for the story"),
@@ -61,6 +80,21 @@ const SequenceMetadataSchema = z.object({
     .boolean()
     .describe(
       "Whether the story contains explicit sexual content (true for graphic sexual descriptions, false for mild romantic content)"
+    ),
+  target_audience: z
+    .array(
+      z.enum([
+        "straight-women",
+        "straight-men",
+        "bi-women",
+        "bi-men",
+        "gay-men",
+        "lesbian",
+        "queer",
+      ])
+    )
+    .describe(
+      "Array of target audiences who would most likely enjoy this story"
     ),
 });
 
@@ -327,6 +361,66 @@ ${outline}`;
   throw new Error(`Explicit content detection failed: ${lastError.message}`);
 }
 
+// Generate target audience
+async function generateTargetAudience(
+  outline: string
+): Promise<z.infer<typeof TargetAudienceSchema>> {
+  const systemPrompt = `You are an audience analysis specialist for romance and erotic fiction. Analyze story content to determine target audiences based on character dynamics, relationship types, and appeal factors.
+
+Target Audience Categories:
+- "straight-women": Stories featuring heterosexual relationships with female-focused perspectives, strong female characters, and romantic elements that appeal to straight women
+- "straight-men": Stories with heterosexual relationships from male perspectives or with themes that appeal to straight men
+- "bi-women": Stories with bisexual female characters, multiple gender attraction, or themes that resonate with bisexual women
+- "bi-men": Stories with bisexual male characters, multiple gender attraction, or themes that resonate with bisexual men
+- "gay-men": Stories featuring male-male relationships, gay male characters, or themes that appeal to gay men
+- "lesbian": Stories featuring female-female relationships, lesbian characters, or themes that appeal to lesbian women
+- "queer": Stories with non-binary characters, gender-fluid themes, or general LGBTQ+ content that doesn't fit other specific categories
+
+Guidelines:
+- Select 1-3 primary target audiences based on the story's main characters, relationships, and themes
+- Consider the perspective and focus of the story (whose experience is centered)
+- Look for specific relationship dynamics and character types
+- Stories can have multiple target audiences if they have broad appeal, but most have just one`;
+
+  const prompt = `Analyze this story outline and determine which target audiences would most likely enjoy this story:
+
+${outline}
+
+Consider the main characters, relationship dynamics, perspective, and themes to select the most appropriate target audiences.`;
+
+  const maxRetries = 3;
+  let lastError: Error = new Error("Unknown error");
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(
+        `🎯 Generating target audience with GPT-4.1-nano (attempt ${attempt}/${maxRetries})`
+      );
+      const { object } = await generateObject({
+        model: openai("gpt-4.1-nano"),
+        system: systemPrompt,
+        prompt,
+        schema: TargetAudienceSchema,
+        temperature: 0.1,
+      });
+      return object;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(
+        `❌ Failed to generate target audience (attempt ${attempt}/${maxRetries}):`,
+        lastError.message
+      );
+
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw new Error(`Target audience generation failed: ${lastError.message}`);
+}
+
 // Main function that orchestrates parallel calls
 export const generateSequenceMetadata = async (
   outline: string,
@@ -335,17 +429,19 @@ export const generateSequenceMetadata = async (
   console.log("🏷️ Generating sequence metadata with parallel AI calls");
 
   try {
-    // Execute all four AI calls in parallel
+    // Execute all five AI calls in parallel
     const [
       titleDescriptionResult,
       tagsResult,
       triggerWarningsResult,
       explicitContentResult,
+      targetAudienceResult,
     ] = await Promise.all([
       generateTitleDescription(outline, storyLength),
       generateTags(outline),
       generateTriggerWarnings(outline),
       detectExplicitContent(outline),
+      generateTargetAudience(outline),
     ]);
 
     // Combine results
@@ -354,6 +450,7 @@ export const generateSequenceMetadata = async (
       ...tagsResult,
       ...triggerWarningsResult,
       ...explicitContentResult,
+      ...targetAudienceResult,
     };
 
     console.log("✅ Successfully generated all metadata");

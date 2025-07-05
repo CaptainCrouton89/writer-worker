@@ -226,38 +226,38 @@ export type Database = {
         Row: {
           author: string
           content: string
-          created_at: string | null
+          created_at: string
           description: string | null
           embedding: string | null
           generation_progress: number | null
           generation_status: string | null
           id: string
           parent_id: string | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           author: string
           content: string
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           embedding?: string | null
           generation_progress?: number | null
           generation_status?: string | null
           id?: string
           parent_id?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           author?: string
           content?: string
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           embedding?: string | null
           generation_progress?: number | null
           generation_status?: string | null
           id?: string
           parent_id?: string | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -305,6 +305,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_author_fkey"
+            columns: ["author"]
+            isOneToOne: false
+            referencedRelation: "user_preferences"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "comments_chapter_id_fkey"
             columns: ["chapter_id"]
@@ -388,27 +395,185 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campaigns: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          sent_at: string | null
+          subject: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          sent_at?: string | null
+          subject?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          sent_at?: string | null
+          subject?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_link_clicks: {
+        Row: {
+          clicked_at: string | null
+          id: string
+          ip_hash: string | null
+          link_id: string
+          user_agent: string | null
+          user_id_hash: string | null
+        }
+        Insert: {
+          clicked_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          link_id: string
+          user_agent?: string | null
+          user_id_hash?: string | null
+        }
+        Update: {
+          clicked_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          link_id?: string
+          user_agent?: string | null
+          user_id_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_link_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "email_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_links: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          hash: string
+          id: string
+          label: string | null
+          url: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          hash: string
+          id?: string
+          label?: string | null
+          url: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          hash?: string
+          id?: string
+          label?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaign_analytics"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "email_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_opens: {
+        Row: {
+          campaign_id: string
+          id: string
+          ip_hash: string | null
+          opened_at: string | null
+          user_agent: string | null
+          user_id_hash: string | null
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          ip_hash?: string | null
+          opened_at?: string | null
+          user_agent?: string | null
+          user_id_hash?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          ip_hash?: string | null
+          opened_at?: string | null
+          user_agent?: string | null
+          user_id_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_opens_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaign_analytics"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "email_opens_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fandom_pack_characters: {
         Row: {
           created_at: string | null
+          custom_image_prompt: string | null
           description: string
           id: string
+          image_prompt: string | null
+          image_url: string | null
           name: string
           pack_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          custom_image_prompt?: string | null
           description: string
           id?: string
+          image_prompt?: string | null
+          image_url?: string | null
           name: string
           pack_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          custom_image_prompt?: string | null
           description?: string
           id?: string
+          image_prompt?: string | null
+          image_url?: string | null
           name?: string
           pack_id?: string | null
           updated_at?: string | null
@@ -430,6 +595,7 @@ export type Database = {
           description: string | null
           fandom_name: string
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           updated_at: string | null
@@ -440,6 +606,7 @@ export type Database = {
           description?: string | null
           fandom_name: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           updated_at?: string | null
@@ -450,6 +617,7 @@ export type Database = {
           description?: string | null
           fandom_name?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           updated_at?: string | null
@@ -633,6 +801,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sequences"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      heart_notification_milestones: {
+        Row: {
+          author_id: string
+          chapter_id: string
+          created_at: string
+          id: string
+          milestone_reached: number
+          notified_at: string
+        }
+        Insert: {
+          author_id: string
+          chapter_id: string
+          created_at?: string
+          id?: string
+          milestone_reached: number
+          notified_at?: string
+        }
+        Update: {
+          author_id?: string
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          milestone_reached?: number
+          notified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "heart_notification_milestones_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "heart_notification_milestones_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "combined_chapters_sequences"
+            referencedColumns: ["chapter_id"]
           },
         ]
       }
@@ -829,10 +1039,91 @@ export type Database = {
         }
         Relationships: []
       }
+      re_engagement_emails: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          sent_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_emails: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          email_type: string
+          html_content: string
+          id: string
+          metadata: Json | null
+          recipient_filters: Json | null
+          recipients_count: number | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          email_type: string
+          html_content: string
+          id?: string
+          metadata?: Json | null
+          recipient_filters?: Json | null
+          recipients_count?: number | null
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          email_type?: string
+          html_content?: string
+          id?: string
+          metadata?: Json | null
+          recipient_filters?: Json | null
+          recipients_count?: number | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       sequences: {
         Row: {
           chapters: Json | null
-          created_at: string | null
+          created_at: string
           created_by: string
           description: string | null
           embedding: string | null
@@ -840,14 +1131,15 @@ export type Database = {
           is_sexually_explicit: boolean
           name: string | null
           tags: string[]
+          target_audience: string[]
           title: string | null
           trigger_warnings: string[]
-          updated_at: string | null
+          updated_at: string
           user_prompt_history: Json
         }
         Insert: {
           chapters?: Json | null
-          created_at?: string | null
+          created_at?: string
           created_by: string
           description?: string | null
           embedding?: string | null
@@ -855,14 +1147,15 @@ export type Database = {
           is_sexually_explicit?: boolean
           name?: string | null
           tags?: string[]
+          target_audience?: string[]
           title?: string | null
           trigger_warnings?: string[]
-          updated_at?: string | null
+          updated_at?: string
           user_prompt_history?: Json
         }
         Update: {
           chapters?: Json | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string
           description?: string | null
           embedding?: string | null
@@ -870,9 +1163,10 @@ export type Database = {
           is_sexually_explicit?: boolean
           name?: string | null
           tags?: string[]
+          target_audience?: string[]
           title?: string | null
           trigger_warnings?: string[]
-          updated_at?: string | null
+          updated_at?: string
           user_prompt_history?: Json
         }
         Relationships: []
@@ -1035,17 +1329,23 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          avatar_url: string
           created_at: string | null
-          email_frequency_preference: string | null
           email_marketing_consent: boolean | null
           email_newsletter_consent: boolean | null
+          email_onboarding_consent: boolean | null
           email_product_updates: boolean | null
+          email_story_extended_notifications: boolean | null
+          email_story_liked_notifications: boolean | null
+          first_sequence_created_at: string | null
+          gender: string | null
           highest_streak: number | null
           id: string
           ignored_trigger_warnings: string[] | null
           last_reward_claimed_date: string | null
           last_visit_date: string | null
           login_streak: number | null
+          preference: string | null
           referral_count: number
           referral_rewards: number
           referred_by: string | null
@@ -1059,17 +1359,23 @@ export type Database = {
           username: string
         }
         Insert: {
+          avatar_url?: string
           created_at?: string | null
-          email_frequency_preference?: string | null
           email_marketing_consent?: boolean | null
           email_newsletter_consent?: boolean | null
+          email_onboarding_consent?: boolean | null
           email_product_updates?: boolean | null
+          email_story_extended_notifications?: boolean | null
+          email_story_liked_notifications?: boolean | null
+          first_sequence_created_at?: string | null
+          gender?: string | null
           highest_streak?: number | null
           id?: string
           ignored_trigger_warnings?: string[] | null
           last_reward_claimed_date?: string | null
           last_visit_date?: string | null
           login_streak?: number | null
+          preference?: string | null
           referral_count?: number
           referral_rewards?: number
           referred_by?: string | null
@@ -1083,17 +1389,23 @@ export type Database = {
           username?: string
         }
         Update: {
+          avatar_url?: string
           created_at?: string | null
-          email_frequency_preference?: string | null
           email_marketing_consent?: boolean | null
           email_newsletter_consent?: boolean | null
+          email_onboarding_consent?: boolean | null
           email_product_updates?: boolean | null
+          email_story_extended_notifications?: boolean | null
+          email_story_liked_notifications?: boolean | null
+          first_sequence_created_at?: string | null
+          gender?: string | null
           highest_streak?: number | null
           id?: string
           ignored_trigger_warnings?: string[] | null
           last_reward_claimed_date?: string | null
           last_visit_date?: string | null
           login_streak?: number | null
+          preference?: string | null
           referral_count?: number
           referral_rewards?: number
           referred_by?: string | null
@@ -1293,8 +1605,28 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campaign_analytics: {
+        Row: {
+          campaign_id: string | null
+          campaign_name: string | null
+          campaign_type: string | null
+          click_through_rate: number | null
+          sent_at: string | null
+          subject: string | null
+          total_clicks: number | null
+          total_links: number | null
+          total_opens: number | null
+          unique_clicks: number | null
+          unique_opens: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      auto_heart_new_user_chapters: {
+        Args: { p_admin_user_id?: string }
+        Returns: Json
+      }
       backfill_missing_user_preferences: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1308,6 +1640,10 @@ export type Database = {
       }
       check_and_award_daily_achievement: {
         Args: { p_user_id: string; p_achievement_type: string }
+        Returns: Json
+      }
+      check_and_award_first_sequence_achievement: {
+        Args: { p_user_id: string; p_sequence_id: string }
         Returns: Json
       }
       check_daily_reward_eligibility: {
@@ -1428,17 +1764,17 @@ export type Database = {
         Returns: string
       }
       get_hot_sequences: {
-        Args:
-          | { limit_count?: number; offset_count?: number }
-          | {
-              match_count?: number
-              match_offset?: number
-              filter_tags?: string[]
-              min_story_length?: number
-              max_story_length?: number
-              min_spice_level?: number
-              max_spice_level?: number
-            }
+        Args: {
+          match_count: number
+          match_offset: number
+          filter_tags: string[]
+          use_or_tags: boolean
+          min_story_length: number
+          max_story_length: number
+          min_spice_level: number
+          max_spice_level: number
+          exclude_user_id: string
+        }
         Returns: {
           sequence_id: string
           sequence_name: string
@@ -1448,8 +1784,7 @@ export type Database = {
           top_author: string
           author_count: number
           all_authors: string[]
-          hot_score: number
-          most_recent_update: string
+          story_length: number
         }[]
       }
       get_juicy_chapters_last_week: {
@@ -1492,7 +1827,7 @@ export type Database = {
       get_user_recommendations: {
         Args: { p_user_id: string; p_limit?: number }
         Returns: {
-          sequence_id: string
+          id: string
           name: string
           description: string
           tags: string[]
@@ -1557,6 +1892,10 @@ export type Database = {
             }
         Returns: string
       }
+      process_scheduled_emails: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       process_token_purchase: {
         Args: {
           p_user_id: string
@@ -1591,26 +1930,19 @@ export type Database = {
         }[]
       }
       search_sequences_hybrid: {
-        Args:
-          | {
-              query_embedding: string
-              query_text: string
-              match_threshold?: number
-              match_count?: number
-              match_offset?: number
-            }
-          | {
-              query_embedding: string
-              query_text: string
-              match_threshold?: number
-              match_count?: number
-              match_offset?: number
-              filter_tags?: string[]
-              min_story_length?: number
-              max_story_length?: number
-              min_spice_level?: number
-              max_spice_level?: number
-            }
+        Args: {
+          query_embedding: string
+          query_text: string
+          match_threshold?: number
+          match_count?: number
+          match_offset?: number
+          filter_tags?: string[]
+          use_or_tags?: boolean
+          min_story_length?: number
+          max_story_length?: number
+          min_spice_level?: number
+          max_spice_level?: number
+        }
         Returns: {
           sequence_id: string
           sequence_created_at: string
