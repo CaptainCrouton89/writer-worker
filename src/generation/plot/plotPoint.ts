@@ -91,9 +91,11 @@ const lengthGuidelines = [
 ];
 
 const styleGuidelines = [
-  `Write in the style of JK Rowling`,
-  `Write in the style of Hemingway`,
+  `Write in the style of Stephanie Meyer`,
   `Write in the style of Jane Austen`,
+  `Write in the style of Nicholas Sparks`,
+  `Write in the style of Colleen Hoover`,
+  `Write in the style of Sally Rooney`,
 ];
 
 const getPrompt = (
