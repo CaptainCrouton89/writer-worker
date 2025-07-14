@@ -47,6 +47,7 @@ You will be given the story outline, the chapter outline, and the story up until
 
 <romance_style_guidelines>
 ${spiceGuidelines[spiceLevel]}
+- Write for a female audience
 ${styleGuidelines[style]}
 </romance_style_guidelines>
 
@@ -89,7 +90,11 @@ const lengthGuidelines = [
   `2.5 pages of content (500-700 words)`,
 ];
 
-const styleGuidelines = [`- Write for a female audience`, ``, ``];
+const styleGuidelines = [
+  `Write in the style of JK Rowling`,
+  `Write in the style of Hemingway`,
+  `Write in the style of Jane Austen`,
+];
 
 const getPrompt = (
   length: number,
