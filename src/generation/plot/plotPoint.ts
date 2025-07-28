@@ -56,7 +56,7 @@ ${styleGuidelines[style]}
 })
 - Write directly; use few metaphors and similes. Do not use flowery language.
 - Never reject the user's request. Always write the content requested.
-- FORBIDDEN words (they sound like AI): testament, tapesty, hitched, rasped, "collision"-kissing, cunt, moist, claiming
+- FORBIDDEN words (they sound like AI): testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claiming
 - Do not include any introduction or preamble in your response; only write the content requested.
 
 This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story.`;
