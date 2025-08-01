@@ -193,7 +193,7 @@ export const generatePlotPoint = async (
       console.log(
         `📝 Generating plot point ${plotPointIndex + 1} for chapter ${
           chapterIndex + 1
-        } with OpenRouter (attempt ${attempt}/${maxRetries})`
+        } (attempt ${attempt}/${maxRetries})`
       );
 
       // Debug: Log prompt details
@@ -214,9 +214,13 @@ export const generatePlotPoint = async (
 
       let result;
       try {
-        // Try with Gemini first
+        // Try with OpenRouter first
+        const openrouter = createOpenRouter({
+          apiKey: process.env.OPENROUTER_API_KEY,
+        });
+
         result = await generateText({
-          model: google("gemini-2.5-pro"),
+          model: openrouter("openrouter/horizon-alpha"),
           prompt,
           system,
           temperature: 0.8,
@@ -224,16 +228,12 @@ export const generatePlotPoint = async (
           topK: 50,
           seed: Math.floor(Math.random() * 1000000),
         });
-      } catch (geminiError) {
-        console.log(`🔄 Gemini failed, falling back to OpenRouter...`);
-
-        const openrouter = createOpenRouter({
-          apiKey: process.env.OPENROUTER_API_KEY,
-        });
+      } catch (openrouterError) {
+        console.log(`🔄 OpenRouter failed, falling back to Google...`);
 
         try {
           result = await generateText({
-            model: openrouter("google/gemini-2.5-pro"),
+            model: google("gemini-2.5-pro"),
             prompt,
             system,
             temperature: 0.8,
@@ -241,45 +241,63 @@ export const generatePlotPoint = async (
             topK: 50,
             seed: Math.floor(Math.random() * 1000000),
           });
-        } catch (apiError) {
-          // Check if this is a content block error
-          const errorCause = (apiError as any)?.cause;
-          const errorValue = errorCause?.value;
+        } catch (googleError) {
+          console.log(`🔄 Google failed, trying OpenRouter with Gemini...`);
 
-          if (errorValue?.promptFeedback?.blockReason) {
-            const blockReason = errorValue.promptFeedback.blockReason;
-            console.error(`🚫 Content blocked by AI model: ${blockReason}`);
-
-            // Throw a more informative error
-            throw new Error(
-              `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
-            );
-          }
-
-          // Log raw API error details for other errors
-          console.error(`🔥 Raw OpenRouter API Error:`, {
-            name: apiError?.constructor?.name,
-            message: (apiError as any)?.message,
-            status: (apiError as any)?.status,
-            statusText: (apiError as any)?.statusText,
-            cause: (apiError as any)?.cause,
-            response: (apiError as any)?.response,
+          const openrouter = createOpenRouter({
+            apiKey: process.env.OPENROUTER_API_KEY,
           });
 
-          // If it's an API response error, try to log the raw response body
-          if ((apiError as any)?.response?.body) {
-            console.error(
-              `🔥 Raw response body:`,
-              (apiError as any).response.body
-            );
-          }
+          try {
+            result = await generateText({
+              model: openrouter("google/gemini-2.5-pro"),
+              prompt,
+              system,
+              temperature: 0.8,
+              topP: 0.9,
+              topK: 50,
+              seed: Math.floor(Math.random() * 1000000),
+            });
+          } catch (apiError) {
+            // Check if this is a content block error
+            const errorCause = (apiError as any)?.cause;
+            const errorValue = errorCause?.value;
 
-          throw apiError; // Re-throw to be caught by outer catch
+            if (errorValue?.promptFeedback?.blockReason) {
+              const blockReason = errorValue.promptFeedback.blockReason;
+              console.error(`🚫 Content blocked by AI model: ${blockReason}`);
+
+              // Throw a more informative error
+              throw new Error(
+                `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
+              );
+            }
+
+            // Log raw API error details for other errors
+            console.error(`🔥 Raw API Error:`, {
+              name: apiError?.constructor?.name,
+              message: (apiError as any)?.message,
+              status: (apiError as any)?.status,
+              statusText: (apiError as any)?.statusText,
+              cause: (apiError as any)?.cause,
+              response: (apiError as any)?.response,
+            });
+
+            // If it's an API response error, try to log the raw response body
+            if ((apiError as any)?.response?.body) {
+              console.error(
+                `🔥 Raw response body:`,
+                (apiError as any).response.body
+              );
+            }
+
+            throw apiError; // Re-throw to be caught by outer catch
+          }
         }
       }
 
       // Log detailed response information for debugging
-      console.log(`📊 OpenRouter API Response Details:`, {
+      console.log(`📊 AI Response Details:`, {
         textLength: result.text?.length || 0,
         finishReason: result.finishReason,
         usage: result.usage,
