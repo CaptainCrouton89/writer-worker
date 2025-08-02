@@ -5,7 +5,7 @@ export const STORY_LENGTH_CONFIG = [
     // Short story
     chapterCount: 5,
     bulletsPerChapter: 3,
-    pagesPerBullet: 1.5,
+    pagesPerBullet: 1,
     wordTarget: "400-500 words",
   },
   {
@@ -13,7 +13,7 @@ export const STORY_LENGTH_CONFIG = [
     // Novella
     chapterCount: 10,
     bulletsPerChapter: 4,
-    pagesPerBullet: 1.75,
+    pagesPerBullet: 1.25,
     wordTarget: "500-600 words",
   },
   {
@@ -21,7 +21,7 @@ export const STORY_LENGTH_CONFIG = [
     // Slow burn
     chapterCount: 20,
     bulletsPerChapter: 5,
-    pagesPerBullet: 2,
+    pagesPerBullet: 1.5,
     wordTarget: "500-700 words",
   },
 ];

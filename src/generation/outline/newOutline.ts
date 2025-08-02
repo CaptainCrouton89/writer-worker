@@ -4,6 +4,18 @@ import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter } from "../../lib/types";
 import { parseOutlineText } from "./types";
 
+const novelFormulas = [
+  "Three-Act Structure: Act 1 (Setup 25%) → Act 2 (Confrontation 50%) → Act 3 (Resolution 25%)",
+  "Hero's Journey: Ordinary World → Call to Adventure → Refusal → Meeting the Mentor → Crossing the Threshold → Tests/Allies/Enemies → Ordeal → Reward → The Road Back → Resurrection → Return with Elixir",
+  "Save the Cat Beat Sheet: Opening Image → Theme Stated → Setup → Catalyst → Debate → Break into Two → B Story → Fun and Games → Midpoint → Bad Guys Close In → All Is Lost → Dark Night of the Soul → Break into Three → Finale → Final Image",
+  "Kishōtenketsu: Introduction (ki) → Development (shō) → Twist (ten) → Conclusion (ketsu)",
+  "Scene and Sequel: Goal → Conflict → Disaster → Reaction → Dilemma → Decision (repeat)"
+];
+
+const getRandomFormula = (): string => {
+  return novelFormulas[Math.floor(Math.random() * novelFormulas.length)];
+};
+
 const spiceGuidelines = [
   `
 - Build romantic tension very gradually throughout the story arc
@@ -26,12 +38,19 @@ const spiceGuidelines = [
 - The story is for a novel. Explore complex themes and relationships.`,
 ];
 
-const systemPrompt = (outline: { spiceLevel: number; storyLength: number }) => `
+const systemPrompt = (outline: { spiceLevel: number; storyLength: number; structureFormula: string }) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
 ${spiceGuidelines[outline.spiceLevel]}
 </story_guidelines>
+
+<structure_formula>
+Use the following narrative structure as an approximate guide for pacing and story beats:
+${outline.structureFormula}
+
+Adapt this structure to fit the story content and chapter count, using it as inspiration for overall pacing and narrative flow.
+</structure_formula>
 
 <outline_structure>
 - The outline is for a ${STORY_LENGTH_CONFIG[outline.storyLength].type} story.
@@ -44,7 +63,6 @@ ${spiceGuidelines[outline.spiceLevel]}
 } pages of content, or about ${
   STORY_LENGTH_CONFIG[outline.storyLength].wordTarget
 }
-- Use good pacing, and follow typical story structure.
 - Be creative and original in the story plot, while remaining within the bounds of the user's request.
 </outline_structure>
 
@@ -103,9 +121,11 @@ export const generateNewOutline = async (storyOutline: {
   user_tags: string[];
   spice_level: number;
 }): Promise<Chapter[]> => {
+  const selectedFormula = getRandomFormula();
   const system = systemPrompt({
     spiceLevel: storyOutline.spice_level,
     storyLength: storyOutline.story_length,
+    structureFormula: selectedFormula,
   });
   console.log(system);
   const prompt = getPrompt({
