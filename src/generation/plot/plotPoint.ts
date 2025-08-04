@@ -220,7 +220,7 @@ export const generatePlotPoint = async (
         });
 
         result = await generateText({
-          model: openrouter("openrouter/horizon-alpha"),
+          model: openrouter("openrouter/horizon-beta"),
           prompt,
           system,
           temperature: 0.8,
