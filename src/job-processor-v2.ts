@@ -228,6 +228,7 @@ export class JobProcessorV2 {
       tags: metadata.tags,
       trigger_warnings: metadata.trigger_warnings,
       is_sexually_explicit: metadata.is_sexually_explicit,
+      target_audience: metadata.target_audience,
     });
 
     console.log(`✅ Successfully saved metadata for sequence ${sequenceId}`);

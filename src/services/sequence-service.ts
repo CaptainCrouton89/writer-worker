@@ -97,6 +97,7 @@ export class SequenceService {
       tags?: string[];
       trigger_warnings?: string[];
       is_sexually_explicit?: boolean;
+      target_audience?: string[];
     }
   ): Promise<void> {
     const updates: Partial<Tables<"sequences">> = {};
@@ -116,6 +117,9 @@ export class SequenceService {
     }
     if (metadata.is_sexually_explicit !== undefined) {
       updates.is_sexually_explicit = metadata.is_sexually_explicit;
+    }
+    if (metadata.target_audience !== undefined) {
+      updates.target_audience = metadata.target_audience;
     }
 
     await this.updateSequence(sequenceId, updates);
