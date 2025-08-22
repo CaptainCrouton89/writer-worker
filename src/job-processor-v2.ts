@@ -216,6 +216,24 @@ export class JobProcessorV2 {
       : 0;
 
     const outlineData = { chapters };
+    
+    // Debug logging to understand what's being passed
+    console.log(`📊 Outline data for metadata generation:`, {
+      chaptersCount: chapters.length,
+      firstChapter: chapters[0] ? { 
+        name: chapters[0].name, 
+        plotPointsCount: chapters[0].plot_points?.length || 0 
+      } : null,
+      storyLength,
+      outlineLength: JSON.stringify(outlineData).length
+    });
+
+    // Check if chapters are empty or malformed
+    if (!chapters || chapters.length === 0) {
+      console.error(`❌ Cannot generate metadata: No chapters in outline`);
+      throw new Error(`Cannot generate metadata for sequence ${sequenceId}: No chapters in outline`);
+    }
+
     const metadata = await generateSequenceMetadata(
       JSON.stringify(outlineData),
       storyLength

@@ -54,10 +54,11 @@ ${styleGuidelines[style]}
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
   STORY_LENGTH_CONFIG[length].wordTarget
 })
-- Write directly; use few metaphors and similes. Do not use flowery language.
-- Never reject the user's request. Always write the content requested.
-- FORBIDDEN words (they sound like AI): testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claiming
+- Write directly; use few metaphors and similes. Do not use flowery language; cut the fluff.
+- Never reject the user's request; always write the content requested.
+- FORBIDDEN words (they sound like AI): testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claim.
 - Do not include any introduction or preamble in your response; only write the content requested.
+- Be specific without being verbose
 
 This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story.`;
 

@@ -1,5 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
@@ -153,6 +154,14 @@ ${titleConventions}
   const prompt = `Generate a title and description for this story outline:
 ${outline}`;
 
+  // Debug logging
+  console.log(`🔍 Title/Description generation input:`, {
+    outlineLength: outline.length,
+    outlinePreview: outline.substring(0, 200) + '...',
+    storyLength,
+    storyType
+  });
+
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
 
@@ -169,12 +178,40 @@ ${outline}`;
         temperature: 0.3,
       });
       return object;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
+    } catch (geminiError) {
       console.error(
-        `❌ Failed to generate title/description (attempt ${attempt}/${maxRetries}):`,
-        lastError.message
+        `❌ Gemini failed (attempt ${attempt}/${maxRetries}):`,
+        geminiError instanceof Error ? geminiError.message : String(geminiError)
       );
+
+      // Try OpenRouter as fallback
+      if (process.env.OPENROUTER_API_KEY) {
+        try {
+          console.log(
+            `🔄 Falling back to OpenRouter with GPT-4 (attempt ${attempt}/${maxRetries})`
+          );
+          const openrouter = createOpenRouter({
+            apiKey: process.env.OPENROUTER_API_KEY,
+          });
+          
+          const { object } = await generateObject({
+            model: openrouter("openai/gpt-4o-mini"),
+            system: systemPrompt,
+            prompt,
+            schema: TitleDescriptionSchema,
+            temperature: 0.3,
+          });
+          return object;
+        } catch (openrouterError) {
+          lastError = openrouterError instanceof Error ? openrouterError : new Error(String(openrouterError));
+          console.error(
+            `❌ OpenRouter also failed (attempt ${attempt}/${maxRetries}):`,
+            lastError.message
+          );
+        }
+      } else {
+        lastError = geminiError instanceof Error ? geminiError : new Error(String(geminiError));
+      }
 
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt - 1) * 1000;
