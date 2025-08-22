@@ -13,9 +13,9 @@ export interface Chapter {
 export interface UserPrompt {
   prompt: string;
   tags: string[];
-  style: number;
-  spice_level: number;
-  story_length: number;
+  style: AuthorStyle;
+  spice_level: SpiceLevel;
+  story_length: StoryLength;
   insertion_chapter_index: number;
   processed: boolean;
   processed_at: number;
@@ -33,3 +33,8 @@ export interface WorkerConfig {
   maxRetries: number;
   workerConcurrency: number;
 }
+
+export type SpiceLevel = 0 | 1 | 2;
+export type StoryLength = 0 | 1 | 2;
+
+export type AuthorStyle = 0 | 1 | 2 | 3 | 4;

@@ -1,8 +1,13 @@
-import { Tables } from "../lib/supabase/types.js";
-import { UserPromptHistory, Chapter, Sequence, UserPrompt } from "../lib/types.js";
 import { generateNewOutline } from "../generation/outline/newOutline.js";
 import { regenerateOutline } from "../generation/outline/regenerateOutline.js";
-import { GenerationJob } from "../lib/types.js";
+import {
+  Chapter,
+  GenerationJob,
+  Sequence,
+  SpiceLevel,
+  StoryLength,
+  UserPrompt,
+} from "../lib/types.js";
 
 export class OutlineProcessor {
   async processOutline(
@@ -37,7 +42,9 @@ export class OutlineProcessor {
         processedPromptIndex: promptIndex,
       };
     } else {
-      console.log(`🔄 Regenerating outline with user prompt at chapter ${currentPrompt.insertion_chapter_index}`);
+      console.log(
+        `🔄 Regenerating outline with user prompt at chapter ${currentPrompt.insertion_chapter_index}`
+      );
       const chapters = await this.regenerateExistingOutline(
         job,
         sequence,
@@ -56,30 +63,28 @@ export class OutlineProcessor {
     if (!sequence.user_prompt_history) {
       return [];
     }
-    return sequence.user_prompt_history.filter(prompt => !prompt.processed);
+    return sequence.user_prompt_history.filter((prompt) => !prompt.processed);
   }
 
   private getChapters(sequence: Sequence): Chapter[] {
     return sequence.chapters || [];
   }
 
-  private findPromptIndex(
-    sequence: Sequence,
-    prompt: UserPrompt
-  ): number {
+  private findPromptIndex(sequence: Sequence, prompt: UserPrompt): number {
     const prompts = sequence.user_prompt_history || [];
-    return prompts.findIndex(p => 
-      p.prompt === prompt.prompt && 
-      p.insertion_chapter_index === prompt.insertion_chapter_index
+    return prompts.findIndex(
+      (p) =>
+        p.prompt === prompt.prompt &&
+        p.insertion_chapter_index === prompt.insertion_chapter_index
     );
   }
 
   private async generateNewOutline(prompt: UserPrompt): Promise<Chapter[]> {
     const chapters = await generateNewOutline({
       user_prompt: prompt.prompt,
-      story_length: prompt.story_length,
+      story_length: prompt.story_length as StoryLength,
       user_tags: prompt.tags,
-      spice_level: prompt.spice_level,
+      spice_level: prompt.spice_level as SpiceLevel,
     });
 
     return chapters;
@@ -91,15 +96,14 @@ export class OutlineProcessor {
     prompt: UserPrompt,
     chapterIndex: number
   ): Promise<Chapter[]> {
-
     const existingChapters = this.getChapters(sequence);
-    
+
     const chapters = await regenerateOutline(
       prompt.prompt,
       prompt,
       existingChapters
     );
-    
+
     return chapters;
   }
 }

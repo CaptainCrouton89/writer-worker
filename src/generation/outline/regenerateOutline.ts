@@ -29,7 +29,7 @@ const systemPrompt = (promptData: UserPrompt, storyOutline: string) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to modify the outline provided by the user, incorporating the user's request into the plot and style of the story. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
-${spiceGuidelines[promptData.spice_level]}
+${spiceGuidelines[promptData.spice_level] || spiceGuidelines[0]}
 </story_guidelines>
 
 <old_outline>
@@ -179,26 +179,31 @@ export const regenerateOutline = async (
         temperature: 0.4,
         seed: Math.floor(Math.random() * 1000000),
       });
-      
+
       const generatedChapters = parseOutlineText(text);
-      
+
       // Validate we got the expected number of chapters
       if (generatedChapters.length !== remainingChapterCount) {
         throw new Error(
           `Generated chapter count mismatch: expected ${remainingChapterCount}, got ${generatedChapters.length}`
         );
       }
-      
+
       // Validate each chapter has the expected number of plot points
-      const expectedPlotPoints = STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter;
+      const expectedPlotPoints =
+        STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter;
       for (let i = 0; i < generatedChapters.length; i++) {
         if (generatedChapters[i].plotPoints.length !== expectedPlotPoints) {
           throw new Error(
-            `Generated chapter ${i + insertionIndex + 1} plot point count mismatch: expected ${expectedPlotPoints}, got ${generatedChapters[i].plotPoints.length}`
+            `Generated chapter ${
+              i + insertionIndex + 1
+            } plot point count mismatch: expected ${expectedPlotPoints}, got ${
+              generatedChapters[i].plotPoints.length
+            }`
           );
         }
       }
-      
+
       console.log(
         `✅ Successfully regenerated ${generatedChapters.length} chapters`
       );
@@ -216,19 +221,22 @@ export const regenerateOutline = async (
       return finalChapters;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`❌ Failed to regenerate outline (attempt ${attempt}/${MAX_RETRIES}):`, error);
-      
+      console.error(
+        `❌ Failed to regenerate outline (attempt ${attempt}/${MAX_RETRIES}):`,
+        error
+      );
+
       if (attempt < MAX_RETRIES) {
         const backoffMs = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
         console.log(`⏳ Retrying in ${backoffMs}ms...`);
-        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
       }
     }
   }
 
   throw new Error(
     `Outline regeneration failed after ${MAX_RETRIES} attempts: ${
-      lastError?.message || 'Unknown error'
+      lastError?.message || "Unknown error"
     }`
   );
 };
