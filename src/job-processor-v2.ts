@@ -11,13 +11,18 @@ import {
   getChapterContent,
   getChapterIndex,
 } from "./lib/actions/chapter.js";
+import {
+  JOB_STATUS,
+  JOB_STEPS,
+  JOB_TYPE,
+  VIDEO_STEPS,
+} from "./lib/constants/status.js";
 import { generateEmbedding } from "./lib/embedding.js";
 import { supabase } from "./lib/supabase.js";
 import { Tables } from "./lib/supabase/types.js";
 import { Chapter, GenerationJob, Sequence } from "./lib/types.js";
 import { OutlineProcessor } from "./services/outline-processor.js";
 import { SequenceService } from "./services/sequence-service.js";
-import { JOB_STATUS, JOB_STEPS, JOB_TYPE, VIDEO_STEPS } from "./lib/constants/status.js";
 
 export class JobProcessorV2 {
   private sequenceService: SequenceService;
@@ -30,7 +35,11 @@ export class JobProcessorV2 {
 
   async processJob(job: GenerationJob): Promise<void> {
     try {
-      console.log(`🔄 Processing job ${job.id} of type ${job.job_type || 'story_generation'}`);
+      console.log(
+        `🔄 Processing job ${job.id} of type ${
+          job.job_type || "story_generation"
+        }`
+      );
 
       // Route to appropriate processor based on job type
       if (job.job_type === JOB_TYPE.VIDEO_GENERATION) {
@@ -46,7 +55,9 @@ export class JobProcessorV2 {
   }
 
   private async processStoryGenerationJob(job: GenerationJob): Promise<void> {
-    console.log(`📚 Processing story generation job ${job.id} for chapter ${job.chapter_id}`);
+    console.log(
+      `📚 Processing story generation job ${job.id} for chapter ${job.chapter_id}`
+    );
 
     // Step 1: Lock the job
     await this.lockJob(job.id);
@@ -57,9 +68,7 @@ export class JobProcessorV2 {
     }
 
     // Step 3: Fetch the sequence and chapter data
-    const sequence = await this.sequenceService.fetchSequence(
-      job.sequence_id
-    );
+    const sequence = await this.sequenceService.fetchSequence(job.sequence_id);
     const chapter = await fetchChapter(job.chapter_id);
     const chapterIndex = await getChapterIndex(job.chapter_id);
 
@@ -86,11 +95,7 @@ export class JobProcessorV2 {
         sequence
       );
 
-      await this.updateJobProgress(
-        job.id,
-        30,
-        JOB_STEPS.GENERATING_EMBEDDING
-      );
+      await this.updateJobProgress(job.id, 30, JOB_STEPS.GENERATING_EMBEDDING);
       await this.generateAndSaveEmbedding(sequence);
 
       // Mark the prompt as processed if applicable
@@ -122,7 +127,9 @@ export class JobProcessorV2 {
   }
 
   private async processVideoGenerationJob(job: GenerationJob): Promise<void> {
-    console.log(`🎬 Processing video generation job ${job.id} for quote ${job.quote_id}`);
+    console.log(
+      `🎬 Processing video generation job ${job.id} for quote ${job.quote_id}`
+    );
 
     // Step 1: Lock the job
     await this.lockJob(job.id);
@@ -140,7 +147,7 @@ export class JobProcessorV2 {
 
     // Step 3: Fetch context data
     await this.updateJobProgress(job.id, 10, VIDEO_STEPS.FETCHING_CONTEXT);
-    
+
     const [quote, chapter, sequence] = await Promise.all([
       this.fetchFeaturedQuote(job.quote_id),
       fetchChapter(job.chapter_id),
@@ -152,7 +159,7 @@ export class JobProcessorV2 {
 
     // Step 5: Generate video
     await this.updateJobProgress(job.id, 30, VIDEO_STEPS.ENHANCING_PROMPT);
-    
+
     const videoUrl = await generateVideoWithRetry({
       quote,
       chapterContent,
@@ -164,10 +171,14 @@ export class JobProcessorV2 {
     await this.updateJobProgress(job.id, 100, VIDEO_STEPS.COMPLETED);
     await this.completeJob(job.id, job.chapter_id);
 
-    console.log(`✅ Video generation completed for quote ${job.quote_id}: ${videoUrl}`);
+    console.log(
+      `✅ Video generation completed for quote ${job.quote_id}: ${videoUrl}`
+    );
   }
 
-  private async fetchFeaturedQuote(quoteId: string): Promise<Tables<"featured_quotes">> {
+  private async fetchFeaturedQuote(
+    quoteId: string
+  ): Promise<Tables<"featured_quotes">> {
     const { data, error } = await supabase
       .from("featured_quotes")
       .select("*")
@@ -175,7 +186,9 @@ export class JobProcessorV2 {
       .single();
 
     if (error) {
-      throw new Error(`Failed to fetch featured quote ${quoteId}: ${error.message}`);
+      throw new Error(
+        `Failed to fetch featured quote ${quoteId}: ${error.message}`
+      );
     }
 
     if (!data) {
@@ -211,27 +224,33 @@ export class JobProcessorV2 {
     console.log(`🏷️ Generating metadata for sequence ${sequenceId}`);
 
     // Extract story length from the latest user prompt
-    const storyLength = sequence.user_prompt_history && sequence.user_prompt_history.length > 0
-      ? sequence.user_prompt_history[sequence.user_prompt_history.length - 1].story_length
-      : 0;
+    const storyLength =
+      sequence.user_prompt_history && sequence.user_prompt_history.length > 0
+        ? sequence.user_prompt_history[sequence.user_prompt_history.length - 1]
+            .story_length
+        : 0;
 
     const outlineData = { chapters };
-    
+
     // Debug logging to understand what's being passed
     console.log(`📊 Outline data for metadata generation:`, {
       chaptersCount: chapters.length,
-      firstChapter: chapters[0] ? { 
-        name: chapters[0].name, 
-        plotPointsCount: chapters[0].plot_points?.length || 0 
-      } : null,
+      firstChapter: chapters[0]
+        ? {
+            name: chapters[0].name,
+            plotPointsCount: chapters[0].plotPoints?.length || 0,
+          }
+        : null,
       storyLength,
-      outlineLength: JSON.stringify(outlineData).length
+      outlineLength: JSON.stringify(outlineData).length,
     });
 
     // Check if chapters are empty or malformed
     if (!chapters || chapters.length === 0) {
       console.error(`❌ Cannot generate metadata: No chapters in outline`);
-      throw new Error(`Cannot generate metadata for sequence ${sequenceId}: No chapters in outline`);
+      throw new Error(
+        `Cannot generate metadata for sequence ${sequenceId}: No chapters in outline`
+      );
     }
 
     const metadata = await generateSequenceMetadata(
