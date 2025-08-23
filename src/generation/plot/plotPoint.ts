@@ -145,7 +145,8 @@ export const generatePlotPoint = async (
   chapterIndex: number,
   plotPointIndex: number,
   previousChapterContent: string,
-  chapterContentSoFar: string
+  chapterContentSoFar: string,
+  modelConfig?: { provider: string; modelName: string }
 ): Promise<string> => {
   if (
     userPrompt.story_length == null ||
@@ -200,7 +201,12 @@ export const generatePlotPoint = async (
       // Debug: Log prompt details
       console.log(`🔍 System prompt length: ${system.length}`);
       console.log(`🔍 User prompt length: ${prompt.length}`);
-      console.log(`🔍 Model: google/gemini-2.5-pro`);
+      
+      // Use provided model config or default
+      const effectiveProvider = modelConfig?.provider || "openrouter";
+      const effectiveModel = modelConfig?.modelName || "openrouter/horizon-beta";
+      
+      console.log(`🔍 Model: ${effectiveProvider}/${effectiveModel}`);
       console.log(
         `🔍 Chapter: ${chapterIndex + 1} - ${chapters[chapterIndex]?.name}`
       );
@@ -215,20 +221,51 @@ export const generatePlotPoint = async (
 
       let result;
       try {
-        // Try with OpenRouter first
-        const openrouter = createOpenRouter({
-          apiKey: process.env.OPENROUTER_API_KEY,
-        });
+        // Use the model from configuration if provided
+        if (modelConfig) {
+          if (modelConfig.provider === "openrouter") {
+            const openrouter = createOpenRouter({
+              apiKey: process.env.OPENROUTER_API_KEY,
+            });
 
-        result = await generateText({
-          model: openrouter("openrouter/horizon-beta"),
-          prompt,
-          system,
-          temperature: 0.8,
-          topP: 0.9,
-          topK: 50,
-          seed: Math.floor(Math.random() * 1000000),
-        });
+            result = await generateText({
+              model: openrouter(modelConfig.modelName),
+              prompt,
+              system,
+              temperature: 0.8,
+              topP: 0.9,
+              topK: 50,
+              seed: Math.floor(Math.random() * 1000000),
+            });
+          } else if (modelConfig.provider === "google") {
+            result = await generateText({
+              model: google(modelConfig.modelName.replace("google/", "")),
+              prompt,
+              system,
+              temperature: 0.8,
+              topP: 0.9,
+              topK: 50,
+              seed: Math.floor(Math.random() * 1000000),
+            });
+          } else {
+            throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+          }
+        } else {
+          // Fallback to original logic if no config provided
+          const openrouter = createOpenRouter({
+            apiKey: process.env.OPENROUTER_API_KEY,
+          });
+
+          result = await generateText({
+            model: openrouter("openrouter/horizon-beta"),
+            prompt,
+            system,
+            temperature: 0.8,
+            topP: 0.9,
+            topK: 50,
+            seed: Math.floor(Math.random() * 1000000),
+          });
+        }
       } catch (openrouterError) {
         console.log(`🔄 OpenRouter failed, falling back to Google...`);
 

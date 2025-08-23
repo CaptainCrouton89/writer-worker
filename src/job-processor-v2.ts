@@ -313,6 +313,24 @@ export class JobProcessorV2 {
   ): Promise<void> {
     console.log(`✍️ Generating content for chapter ${chapterIndex + 1}`);
 
+    // Get AI model configuration from job
+    let modelConfig: { provider: string; modelName: string } | undefined;
+    if (job.model_id) {
+      const { data: aiModel } = await supabase
+        .from("ai_models")
+        .select("provider, model_name")
+        .eq("id", job.model_id)
+        .single();
+      
+      if (aiModel) {
+        modelConfig = {
+          provider: aiModel.provider,
+          modelName: aiModel.model_name,
+        };
+        console.log(`🤖 Using AI model: ${aiModel.provider}/${aiModel.model_name}`);
+      }
+    }
+
     // Get previous chapter content for context
     const previousChapterContent = chapter.parent_id
       ? await getChapterContent(chapter.parent_id)
@@ -340,7 +358,8 @@ export class JobProcessorV2 {
       chapterIndex,
       latestPrompt,
       chapters,
-      previousChapterContent
+      previousChapterContent,
+      modelConfig
     );
 
     console.log(
