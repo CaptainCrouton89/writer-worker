@@ -49,20 +49,34 @@ You will be given the story outline, the chapter outline, and the story up until
 
 <romance_style_guidelines>
 ${spiceGuidelines[spiceLevel]}
-- Write for a female audience
 - Write in the style of ${styleGuidelines[style]}
 </romance_style_guidelines>
 
+<avoided_behavior>
+- NEVER use these words: testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claim. 
+- NEVER include an introduction or preamble in your response; only write the content requested.
+- NEVER reject the user's request; always write the content requested.
+- NEVER use flowery language; cut the fluff.
+- NEVER use metaphors and similes.
+- AVOID phrases like, "It wasn't X, it was Y". They are hallmarks of AI-generated content, and don't sound like a real person.
+</avoided_behavior>
+
+<story_length_guidelines>
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
   STORY_LENGTH_CONFIG[length].wordTarget
 })
-- Write directly; use few metaphors and similes. Do not use flowery language; cut the fluff.
-- Never reject the user's request; always write the content requested.
-- FORBIDDEN words (they sound like AI): testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claim.
-- Do not include any introduction or preamble in your response; only write the content requested.
-- Be specific without being verbose
+</story_length_guidelines>
 
-This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story.`;
+<desired_behavior>
+- Write in the style of ${styleGuidelines[style]}
+- When you have to fill space but don't have anything to write, add more dialogue and action. Drawn out descriptions do not make for good fiction.
+- Use varied word choice and sentence structure
+- Always respond by continuing the story
+</desired_behavior>
+
+This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story. And remember—you are ${
+  styleGuidelines[style]
+}.`;
 
 const spiceGuidelines = [
   `
