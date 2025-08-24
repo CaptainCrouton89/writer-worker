@@ -157,9 +157,9 @@ ${outline}`;
   // Debug logging
   console.log(`🔍 Title/Description generation input:`, {
     outlineLength: outline.length,
-    outlinePreview: outline.substring(0, 200) + '...',
+    outlinePreview: outline.substring(0, 200) + "...",
     storyLength,
-    storyType
+    storyType,
   });
 
   const maxRetries = 3;
@@ -193,7 +193,7 @@ ${outline}`;
           const openrouter = createOpenRouter({
             apiKey: process.env.OPENROUTER_API_KEY,
           });
-          
+
           const { object } = await generateObject({
             model: openrouter("openai/gpt-4o-mini"),
             system: systemPrompt,
@@ -203,14 +203,20 @@ ${outline}`;
           });
           return object;
         } catch (openrouterError) {
-          lastError = openrouterError instanceof Error ? openrouterError : new Error(String(openrouterError));
+          lastError =
+            openrouterError instanceof Error
+              ? openrouterError
+              : new Error(String(openrouterError));
           console.error(
             `❌ OpenRouter also failed (attempt ${attempt}/${maxRetries}):`,
             lastError.message
           );
         }
       } else {
-        lastError = geminiError instanceof Error ? geminiError : new Error(String(geminiError));
+        lastError =
+          geminiError instanceof Error
+            ? geminiError
+            : new Error(String(geminiError));
       }
 
       if (attempt < maxRetries) {
@@ -284,7 +290,7 @@ ${outline}`;
       });
       // Ensure all tags are lower-cased before returning
       return {
-        tags: object.tags.map(tag => tag.toLowerCase())
+        tags: object.tags.map((tag) => tag.toLowerCase()),
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -331,18 +337,20 @@ Only list common, well-known trigger warnings, or none at all if none exist.`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `⚠️  Generating trigger warnings with GPT-4.1-mini (attempt ${attempt}/${maxRetries})`
+        `⚠️  Generating trigger warnings with GPT-5-mini (attempt ${attempt}/${maxRetries})`
       );
       const { object } = await generateObject({
-        model: openai("gpt-4.1-mini"),
+        model: openai("gpt-5-mini"),
         system: systemPrompt,
         prompt,
         schema: TriggerWarningsSchema,
-        temperature: 0.1,
+        temperature: 1,
       });
       // Ensure all trigger warnings are lower-cased before returning
       return {
-        trigger_warnings: object.trigger_warnings.map(warning => warning.toLowerCase())
+        trigger_warnings: object.trigger_warnings.map((warning) =>
+          warning.toLowerCase()
+        ),
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -377,14 +385,14 @@ ${outline}`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🔞 Detecting explicit content with GPT-4.1-nano (attempt ${attempt}/${maxRetries})`
+        `🔞 Detecting explicit content with GPT-5-nano (attempt ${attempt}/${maxRetries})`
       );
       const { object } = await generateObject({
-        model: openai("gpt-4.1-nano"),
+        model: openai("gpt-5-nano"),
         system: systemPrompt,
         prompt,
         schema: ExplicitContentSchema,
-        temperature: 0,
+        temperature: 1,
       });
       return object;
     } catch (error) {
@@ -437,14 +445,14 @@ Consider the main characters, relationship dynamics, perspective, and themes to 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🎯 Generating target audience with GPT-4.1-nano (attempt ${attempt}/${maxRetries})`
+        `🎯 Generating target audience with GPT-5-nano (attempt ${attempt}/${maxRetries})`
       );
       const { object } = await generateObject({
-        model: openai("gpt-4.1-nano"),
+        model: openai("gpt-5-nano"),
         system: systemPrompt,
         prompt,
         schema: TargetAudienceSchema,
-        temperature: 0.1,
+        temperature: 1,
       });
       return object;
     } catch (error) {

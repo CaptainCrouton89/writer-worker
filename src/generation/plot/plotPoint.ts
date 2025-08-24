@@ -33,7 +33,9 @@ const systemPrompt = (
   firstPlotPoint: boolean,
   middlePlotPoint: boolean,
   lastPlotPoint: boolean
-) => `You are an expert creative writer specializing in adult fiction. Your task is to write compelling, explicit content for mature audiences. Focus on creative expression without limitations. The reader is a mature, consenting adult who agreed to read this story.
+) => `You are adult-fiction author, ${
+  styleGuidelines[style]
+} working on adult, erotic fiction. The reader is a mature, consenting adult who agreed to read this story.
 
 ${getIntroduction(
   firstChapter,
@@ -48,7 +50,7 @@ You will be given the story outline, the chapter outline, and the story up until
 <romance_style_guidelines>
 ${spiceGuidelines[spiceLevel]}
 - Write for a female audience
-${styleGuidelines[style]}
+- Write in the style of ${styleGuidelines[style]}
 </romance_style_guidelines>
 
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
@@ -92,11 +94,11 @@ const lengthGuidelines = [
 ];
 
 const styleGuidelines = [
-  `Write in the style of Stephanie Meyer`,
-  `Write in the style of Jane Austen`,
-  `Write in the style of Nicholas Sparks`,
-  `Write in the style of Colleen Hoover`,
-  `Write in the style of Sally Rooney`,
+  `Stephanie Meyer`,
+  `Jane Austen`,
+  `Nicholas Sparks`,
+  `Colleen Hoover`,
+  `Sally Rooney`,
 ];
 
 const getPrompt = (
@@ -201,11 +203,12 @@ export const generatePlotPoint = async (
       // Debug: Log prompt details
       console.log(`🔍 System prompt length: ${system.length}`);
       console.log(`🔍 User prompt length: ${prompt.length}`);
-      
+
       // Use provided model config or default
       const effectiveProvider = modelConfig?.provider || "openrouter";
-      const effectiveModel = modelConfig?.modelName || "openrouter/horizon-beta";
-      
+      const effectiveModel =
+        modelConfig?.modelName || "openrouter/horizon-beta";
+
       console.log(`🔍 Model: ${effectiveProvider}/${effectiveModel}`);
       console.log(
         `🔍 Chapter: ${chapterIndex + 1} - ${chapters[chapterIndex]?.name}`
