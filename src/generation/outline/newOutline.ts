@@ -40,7 +40,7 @@ const spiceGuidelines = [
 
 const systemPrompt = (outline: {
   spiceLevel: SpiceLevel;
-  storyLength: StoryLength;
+  story_length: StoryLength;
   structureFormula: string;
 }) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
@@ -57,24 +57,25 @@ Adapt this structure to fit the story content and chapter count, using it as ins
 </structure_formula>
 
 <outline_structure>
-- The outline is for a ${STORY_LENGTH_CONFIG[outline.storyLength].type} story.
-- Create ${STORY_LENGTH_CONFIG[outline.storyLength].chapterCount} chapters
+- The outline is for a ${STORY_LENGTH_CONFIG[outline.story_length].type} story.
+- Create ${STORY_LENGTH_CONFIG[outline.story_length].chapterCount} chapters
 - Each chapter should have exactly ${
-  STORY_LENGTH_CONFIG[outline.storyLength].bulletsPerChapter
+  STORY_LENGTH_CONFIG[outline.story_length].bulletsPerChapter
 } plot points
 - Each plot point should represent approximately ${
-  STORY_LENGTH_CONFIG[outline.storyLength].pagesPerBullet
+  STORY_LENGTH_CONFIG[outline.story_length].pagesPerBullet
 } pages of content, or about ${
-  STORY_LENGTH_CONFIG[outline.storyLength].wordTarget
+  STORY_LENGTH_CONFIG[outline.story_length].wordTarget
 }
 - Be creative and original in the story plot, while remaining within the bounds of the user's request.
+- Do not rush the ending
 </outline_structure>
 
 <bullet_point_style>
-Write concise bullet points that are 1-2 sentences long. Each should:
+Write concise bullet points that are 2-3 sentences long. Each should:
 - Provide concrete story events that can be expanded into detailed content
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
--Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Aim for 2 sentences per bullet. Do not be vague.
+- Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Aim for 2 sentences per bullet. Do not be vague.
 </bullet_point_style>
 
 <output_format>
@@ -98,6 +99,8 @@ Chapter 2: Chapter Title
 
 [Continue same format for all chapters...]
 </output_format>
+
+Failing to provide the exact structure will result in a rejection.
 `;
 
 const getPrompt = (outline: {
@@ -116,6 +119,14 @@ It is a ${
     STORY_LENGTH_CONFIG[outline.story_length].type
   }, and should incorporate the following tags:
 ${outline.user_tags.join(", ")}
+
+There should be ${
+    STORY_LENGTH_CONFIG[outline.story_length].chapterCount
+  } chapters, with ${
+    STORY_LENGTH_CONFIG[outline.story_length].bulletsPerChapter
+  } plot points per chapter.
+
+Respond with only the outline.
   `;
 };
 
@@ -125,10 +136,32 @@ export const generateNewOutline = async (storyOutline: {
   user_tags: string[];
   spice_level: SpiceLevel;
 }): Promise<Chapter[]> => {
+  // Validate story_length
+  if (
+    storyOutline.story_length == null ||
+    storyOutline.story_length < 0 ||
+    storyOutline.story_length >= STORY_LENGTH_CONFIG.length
+  ) {
+    throw new Error(
+      `Invalid story length: ${storyOutline.story_length}. Must be 0, 1, or 2.`
+    );
+  }
+
+  // Validate spice_level
+  if (
+    storyOutline.spice_level == null ||
+    storyOutline.spice_level < 0 ||
+    storyOutline.spice_level > 2
+  ) {
+    throw new Error(
+      `Invalid spice level: ${storyOutline.spice_level}. Must be 0, 1, or 2.`
+    );
+  }
+
   const selectedFormula = getRandomFormula();
   const system = systemPrompt({
     spiceLevel: storyOutline.spice_level,
-    storyLength: storyOutline.story_length,
+    story_length: storyOutline.story_length,
     structureFormula: selectedFormula,
   });
   console.log(system);
