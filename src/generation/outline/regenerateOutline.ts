@@ -2,34 +2,17 @@ import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter, UserPrompt } from "../../lib/types";
+import { STYLE_GUIDELINES, SPICE_GUIDELINES_OUTLINE } from "../constants";
 import { parseOutlineText } from "./types";
 
-const spiceGuidelines = [
-  `
-- Build romantic tension very gradually throughout the story arc
-- Start with character establishment and non-romantic interactions
-- Progress slowly through friendship, then attraction, then light physical contact
-- Peak intensity should focus on passionate kissing and sensual moments that imply intimacy
-- Emphasize the emotional journey and slow-burn connection - romance should not dominate early chapters`,
-  `
-- Build sexual tension progressively from emotional connection to physical intimacy
-- Early chapters: Focus on character development and plot with subtle romantic undertones
-- Mid-story: Include passionate kissing, touching, and moderate sexual tension
-- Later chapters: Feature moderately explicit romantic encounters with emotional depth
-- Allow proper time for relationship development before intimate moments`,
-  `
-- Build attraction and chemistry gradually, ramping to explicit encounters
-- Early chapters: Establish characters and plot with underlying sexual tension
-- Mid-story: Include passionate encounters with increasing sexual content
-- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
-- Maintain character development alongside the sexual progression with proper pacing`,
-];
 
 const systemPrompt = (promptData: UserPrompt, storyOutline: string) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to modify the outline provided by the user, incorporating the user's request into the plot and style of the story. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
-${spiceGuidelines[promptData.spice_level] || spiceGuidelines[0]}
+${SPICE_GUIDELINES_OUTLINE[promptData.spice_level] || SPICE_GUIDELINES_OUTLINE[0]}
+- Write in the style of ${STYLE_GUIDELINES[promptData.style]}
+- Unless otherwise specified, the story should be written in past tense
 </story_guidelines>
 
 <old_outline>

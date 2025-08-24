@@ -1,52 +1,27 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
-import { Chapter, SpiceLevel, StoryLength } from "../../lib/types";
+import { AuthorStyle, Chapter, SpiceLevel, StoryLength } from "../../lib/types";
+import { STYLE_GUIDELINES, SPICE_GUIDELINES_OUTLINE, NOVEL_FORMULAS, CUSTOM_STORY_LENGTH_GUIDELINES } from "../constants";
 import { parseOutlineText } from "./types";
 
-const novelFormulas = [
-  "Three-Act Structure: Act 1 (Setup 25%) → Act 2 (Confrontation 50%) → Act 3 (Resolution 25%)",
-  "Hero's Journey: Ordinary World → Call to Adventure → Refusal → Meeting the Mentor → Crossing the Threshold → Tests/Allies/Enemies → Ordeal → Reward → The Road Back → Resurrection → Return with Elixir",
-  "Save the Cat Beat Sheet: Opening Image → Theme Stated → Setup → Catalyst → Debate → Break into Two → B Story → Fun and Games → Midpoint → Bad Guys Close In → All Is Lost → Dark Night of the Soul → Break into Three → Finale → Final Image",
-  "Kishōtenketsu: Introduction (ki) → Development (shō) → Twist (ten) → Conclusion (ketsu)",
-  "Scene and Sequel: Goal → Conflict → Disaster → Reaction → Dilemma → Decision (repeat)",
-];
 
 const getRandomFormula = (): string => {
-  return novelFormulas[Math.floor(Math.random() * novelFormulas.length)];
+  return NOVEL_FORMULAS[Math.floor(Math.random() * NOVEL_FORMULAS.length)];
 };
 
-const spiceGuidelines = [
-  `
-- Build romantic tension very gradually throughout the story arc
-- Start with character establishment and non-romantic interactions
-- Progress slowly through friendship, then attraction, then light physical contact
-- Peak intensity should focus on passionate kissing and sensual moments that imply intimacy
-- Emphasize the emotional journey and slow-burn connection - romance should not dominate early chapters`,
-  `
-- Build sexual tension progressively from emotional connection to physical intimacy
-- Early chapters: Focus on character development and plot with subtle romantic undertones
-- Mid-story: Include passionate kissing, touching, and moderate sexual tension
-- Later chapters: Feature moderately explicit romantic encounters with emotional depth
-- Allow proper time for relationship development before intimate moments`,
-  `
-- Build attraction and chemistry gradually, ramping to explicit encounters
-- Early chapters: Establish characters and plot with underlying sexual tension
-- Mid-story: Include passionate encounters with increasing sexual content
-- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
-- Maintain character development alongside the sexual progression with proper pacing
-- The story is for a novel. Explore complex themes and relationships.`,
-];
 
 const systemPrompt = (outline: {
   spiceLevel: SpiceLevel;
   story_length: StoryLength;
   structureFormula: string;
+  author_style: AuthorStyle;
 }) => `
 You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
-${spiceGuidelines[outline.spiceLevel] || spiceGuidelines[0]}
+${SPICE_GUIDELINES_OUTLINE[outline.spiceLevel] || SPICE_GUIDELINES_OUTLINE[0]}
+- Write in the style of ${STYLE_GUIDELINES[outline.author_style]}
 </story_guidelines>
 
 <structure_formula>
@@ -68,7 +43,7 @@ Adapt this structure to fit the story content and chapter count, using it as ins
   STORY_LENGTH_CONFIG[outline.story_length].wordTarget
 }
 - Be creative and original in the story plot, while remaining within the bounds of the user's request.
-- Do not rush the ending
+${CUSTOM_STORY_LENGTH_GUIDELINES[outline.story_length]}
 </outline_structure>
 
 <bullet_point_style>
@@ -135,6 +110,7 @@ export const generateNewOutline = async (storyOutline: {
   story_length: StoryLength;
   user_tags: string[];
   spice_level: SpiceLevel;
+  author_style: AuthorStyle;
 }): Promise<Chapter[]> => {
   // Validate story_length
   if (
@@ -163,6 +139,7 @@ export const generateNewOutline = async (storyOutline: {
     spiceLevel: storyOutline.spice_level,
     story_length: storyOutline.story_length,
     structureFormula: selectedFormula,
+    author_style: storyOutline.author_style,
   });
   console.log(system);
   const prompt = getPrompt({

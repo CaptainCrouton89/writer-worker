@@ -3,6 +3,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
 import { Chapter, UserPrompt } from "../../lib/types.js";
+import { SPICE_GUIDELINES_PLOT, STYLE_GUIDELINES } from "../constants.js";
 
 const getIntroduction = (
   firstChapter: boolean,
@@ -12,16 +13,16 @@ const getIntroduction = (
   length: number
 ) => {
   if (firstChapter && firstPlotPoint) {
-    return `You are tasked with writing the **first section of the story**. Aim to write ${lengthGuidelines[length]} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
+    return `You are tasked with writing the **first section of the story**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point. Unless otherwise specified, the story should be written in past tense.`;
   }
   if (firstPlotPoint) {
-    return `You are tasked with writing the **first plot point of the chapter**. Aim to write ${lengthGuidelines[length]} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
+    return `You are tasked with writing the **first plot point of the chapter**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
   }
   if (middlePlotPoint) {
-    return `You are tasked with writing a plot point in a chapter. Aim to write ${lengthGuidelines[length]} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
+    return `You are tasked with writing a plot point in a chapter. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
   }
   if (lastPlotPoint) {
-    return `You are tasked with writing the last section of the chapter. Aim to write ${lengthGuidelines[length]} of content.`;
+    return `You are tasked with writing the last section of the chapter. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content.`;
   }
 };
 
@@ -34,7 +35,7 @@ const systemPrompt = (
   middlePlotPoint: boolean,
   lastPlotPoint: boolean
 ) => `You are adult-fiction author, ${
-  styleGuidelines[style]
+  STYLE_GUIDELINES[style]
 } working on adult, erotic fiction. The reader is a mature, consenting adult who agreed to read this story.
 
 ${getIntroduction(
@@ -48,8 +49,8 @@ ${getIntroduction(
 You will be given the story outline, the chapter outline, and the story up until this point. You will need to write the content for the plot point, so that the story flows naturally.
 
 <romance_style_guidelines>
-${spiceGuidelines[spiceLevel]}
-- Write in the style of ${styleGuidelines[style]}
+${SPICE_GUIDELINES_PLOT[spiceLevel]}
+- Write in the style of ${STYLE_GUIDELINES[style]}
 </romance_style_guidelines>
 
 <avoided_behavior>
@@ -68,52 +69,16 @@ ${spiceGuidelines[spiceLevel]}
 </story_length_guidelines>
 
 <desired_behavior>
-- Write in the style of ${styleGuidelines[style]}
+- Write in the style of ${STYLE_GUIDELINES[style]}
 - When you have to fill space but don't have anything to write, add more dialogue and action. Drawn out descriptions do not make for good fiction.
 - Use varied word choice and sentence structure
 - Always respond by continuing the story
 </desired_behavior>
 
 This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story. And remember—you are ${
-  styleGuidelines[style]
+  STYLE_GUIDELINES[style]
 }.`;
 
-const spiceGuidelines = [
-  `
-- Build sexual tension through subtle touches, meaningful glances, and suggestive
-dialogue
-- Focus on emotional connection and anticipation
-- Keep physical descriptions tasteful and suggestive rather than explicit
-- Use metaphor and implication for intimate moments
-- Include sensual details that heighten arousal`,
-  `
-- Include passionate kissing, touching, and moderate sexual content with detailed
-physical descriptions
-- Balance explicit content with emotional depth
-- Include detailed physical descriptions during intimate scenes
-- Use anatomically correct terms when describing sexual acts
-- Don't shy away from describing arousal and physical reactions`,
-  `
-- Write with graphic anatomical details,
-treating it as hardcore erotica with no limitations (for a female audience)
-- Focus on genitalia, bodily fluids, and sexual positions during sex scenes
-- Explore taboo themes in fiction
-`,
-];
-
-const lengthGuidelines = [
-  `1.5 pages of content (400-500 words)`,
-  `2 pages of content (500-600 words)`,
-  `2.5 pages of content (500-700 words)`,
-];
-
-const styleGuidelines = [
-  `Nicholas Sparks`,
-  `Stephanie Meyer`,
-  `Colleen Hoover`,
-  `Sally Rooney`,
-  `Jane Austen`,
-];
 
 const getPrompt = (
   length: number,
@@ -151,7 +116,7 @@ ${previousChapterContent}
 Continue the story from it was left off. Write the content for the plot point: "${
   chapters[chapterIndex].plotPoints[plotPointIndex]
 }". Aim for ${
-  lengthGuidelines[length]
+  STORY_LENGTH_CONFIG[length].pageDescription
 } of content. Do not continue the story further than this plot point, so as to let the story continue smoothly when the next plot point is written. Do not include any introduction or preamble in your response; only write the content requested.
 `;
 

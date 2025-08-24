@@ -85,6 +85,7 @@ export class OutlineProcessor {
       story_length: prompt.story_length as StoryLength,
       user_tags: prompt.tags,
       spice_level: prompt.spice_level as SpiceLevel,
+      author_style: prompt.style,
     });
 
     return chapters;
