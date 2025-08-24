@@ -94,11 +94,11 @@ const lengthGuidelines = [
 ];
 
 const styleGuidelines = [
-  `Stephanie Meyer`,
-  `Jane Austen`,
   `Nicholas Sparks`,
+  `Stephanie Meyer`,
   `Colleen Hoover`,
   `Sally Rooney`,
+  `Jane Austen`,
 ];
 
 const getPrompt = (
