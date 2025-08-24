@@ -282,7 +282,10 @@ ${outline}`;
         schema: TagsSchema,
         temperature: 0.2,
       });
-      return object;
+      // Ensure all tags are lower-cased before returning
+      return {
+        tags: object.tags.map(tag => tag.toLowerCase())
+      };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.error(
@@ -337,7 +340,10 @@ Only list common, well-known trigger warnings, or none at all if none exist.`;
         schema: TriggerWarningsSchema,
         temperature: 0.1,
       });
-      return object;
+      // Ensure all trigger warnings are lower-cased before returning
+      return {
+        trigger_warnings: object.trigger_warnings.map(warning => warning.toLowerCase())
+      };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.error(
