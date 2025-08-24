@@ -5,6 +5,9 @@ import { supabase } from "./lib/supabase.js";
 import { HEALTH_STATUS, JOB_STATUS } from "./lib/constants/status.js";
 import { JobRetryService, RetryJobRequest } from "./services/job-retry-service.js";
 
+// Import cleanupOrphanedChapters function
+import { cleanupOrphanedChapters } from "./worker.js";
+
 const app = express();
 const PORT = process.env.PORT || 3951;
 
@@ -58,6 +61,7 @@ app.get("/", (req, res) => {
       health: "/health",
       metrics: "/metrics",
       retry: "POST /jobs/retry",
+      cleanup: "POST /cleanup/orphaned-chapters",
     },
   });
 });
@@ -168,6 +172,30 @@ app.post("/jobs/retry", async (req: express.Request, res: express.Response) => {
     console.error("Job retry failed:", error);
     res.status(500).json({
       error: "Internal server error during job retry",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Cleanup orphaned chapters endpoint
+app.post("/cleanup/orphaned-chapters", async (req: express.Request, res: express.Response) => {
+  try {
+    console.log("🔄 Manual orphaned chapters cleanup requested");
+    
+    await cleanupOrphanedChapters();
+    
+    res.json({
+      success: true,
+      message: "Orphaned chapters cleanup completed successfully",
+      timestamp: new Date().toISOString(),
+    });
+    
+  } catch (error) {
+    console.error("❌ Manual cleanup failed:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to cleanup orphaned chapters",
+      details: error instanceof Error ? error.message : "Unknown error",
       timestamp: new Date().toISOString(),
     });
   }

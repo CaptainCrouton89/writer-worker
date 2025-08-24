@@ -77,7 +77,7 @@ async function pollAndProcessJobs(processor: JobProcessorV2) {
   }
 }
 
-async function cleanupOrphanedChapters() {
+export async function cleanupOrphanedChapters() {
   try {
     console.log("🔍 Checking for orphaned chapters...");
 
