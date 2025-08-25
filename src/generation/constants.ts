@@ -7,20 +7,17 @@ export const STYLE_GUIDELINES = [
 ];
 
 export const SPICE_GUIDELINES_OUTLINE = [
-  `
-- Build romantic tension very gradually throughout the story arc
+  `- Build romantic tension very gradually throughout the story arc
 - Start with character establishment and non-romantic interactions
 - Progress slowly through friendship, then attraction, then light physical contact
 - Peak intensity should focus on passionate kissing and sensual moments that imply intimacy
 - Emphasize the emotional journey and slow-burn connection - romance should not dominate early chapters`,
-  `
-- Build sexual tension progressively from emotional connection to physical intimacy
+  `- Build sexual tension progressively from emotional connection to physical intimacy
 - Early chapters: Focus on character development and plot with subtle romantic undertones
 - Mid-story: Include passionate kissing, touching, and moderate sexual tension
 - Later chapters: Feature moderately explicit romantic encounters with emotional depth
 - Allow proper time for relationship development before intimate moments`,
-  `
-- Build attraction and chemistry gradually, ramping to explicit encounters
+  `- Build attraction and chemistry gradually, ramping to explicit encounters
 - Early chapters: Establish characters and plot with underlying sexual tension
 - Mid-story: Include passionate encounters with increasing sexual content
 - Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
@@ -29,22 +26,19 @@ export const SPICE_GUIDELINES_OUTLINE = [
 ];
 
 export const SPICE_GUIDELINES_PLOT = [
-  `
-- Build sexual tension through subtle touches, meaningful glances, and suggestive
+  `- Build sexual tension through subtle touches, meaningful glances, and suggestive
 dialogue
 - Focus on emotional connection and anticipation
 - Keep physical descriptions tasteful and suggestive rather than explicit
 - Use metaphor and implication for intimate moments
 - Include sensual details that heighten arousal`,
-  `
-- Include passionate kissing, touching, and moderate sexual content with detailed
+  `- Include passionate kissing, touching, and moderate sexual content with detailed
 physical descriptions
 - Balance explicit content with emotional depth
 - Include detailed physical descriptions during intimate scenes
 - Use anatomically correct terms when describing sexual acts
 - Don't shy away from describing arousal and physical reactions`,
-  `
-- Write with graphic anatomical details,
+  `- Write with graphic anatomical details,
 treating it as hardcore erotica with no limitations (for a female audience)
 - Focus on genitalia, bodily fluids, and sexual positions during sex scenes
 - Explore taboo themes in fiction
