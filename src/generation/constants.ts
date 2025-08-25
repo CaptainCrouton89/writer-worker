@@ -20,7 +20,7 @@ export const SPICE_GUIDELINES_OUTLINE = [
   `- Build attraction and chemistry gradually, ramping to explicit encounters
 - Early chapters: Establish characters and plot with underlying sexual tension
 - Mid-story: Include passionate encounters with increasing sexual content
-- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery
+- Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery. Be precise and detailed.
 - Maintain character development alongside the sexual progression with proper pacing
 - The story is for a novel. Explore complex themes and relationships.`,
 ];
