@@ -1,4 +1,3 @@
-import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
@@ -168,56 +167,28 @@ ${outline}`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `📝 Generating title/description with Gemini 2.5 Pro (attempt ${attempt}/${maxRetries})`
+        `📝 Generating title/description with OpenRouter Gemini (attempt ${attempt}/${maxRetries})`
       );
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+      });
       const { object } = await generateObject({
-        model: google("gemini-2.5-pro"),
+        model: openrouter("google/gemini-2.5-pro"),
         system: systemPrompt,
         prompt,
         schema: TitleDescriptionSchema,
         temperature: 0.3,
       });
       return object;
-    } catch (geminiError) {
+    } catch (openrouterError) {
+      lastError =
+        openrouterError instanceof Error
+          ? openrouterError
+          : new Error(String(openrouterError));
       console.error(
-        `❌ Gemini failed (attempt ${attempt}/${maxRetries}):`,
-        geminiError instanceof Error ? geminiError.message : String(geminiError)
+        `❌ OpenRouter failed (attempt ${attempt}/${maxRetries}):`,
+        lastError.message
       );
-
-      // Try OpenRouter as fallback
-      if (process.env.OPENROUTER_API_KEY) {
-        try {
-          console.log(
-            `🔄 Falling back to OpenRouter with GPT-4 (attempt ${attempt}/${maxRetries})`
-          );
-          const openrouter = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-          });
-
-          const { object } = await generateObject({
-            model: openrouter("openai/gpt-4o-mini"),
-            system: systemPrompt,
-            prompt,
-            schema: TitleDescriptionSchema,
-            temperature: 0.3,
-          });
-          return object;
-        } catch (openrouterError) {
-          lastError =
-            openrouterError instanceof Error
-              ? openrouterError
-              : new Error(String(openrouterError));
-          console.error(
-            `❌ OpenRouter also failed (attempt ${attempt}/${maxRetries}):`,
-            lastError.message
-          );
-        }
-      } else {
-        lastError =
-          geminiError instanceof Error
-            ? geminiError
-            : new Error(String(geminiError));
-      }
 
       if (attempt < maxRetries) {
         const delay = Math.pow(2, attempt - 1) * 1000;

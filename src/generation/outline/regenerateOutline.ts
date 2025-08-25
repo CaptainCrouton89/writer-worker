@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter, UserPrompt } from "../../lib/types";
@@ -155,8 +155,11 @@ export const regenerateOutline = async (
           insertionIndex + 1
         } (attempt ${attempt}/${MAX_RETRIES})`
       );
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+      });
       const { text } = await generateText({
-        model: google("gemini-2.5-pro"),
+        model: openrouter("google/gemini-2.5-pro"),
         system,
         prompt,
         temperature: 0.4,

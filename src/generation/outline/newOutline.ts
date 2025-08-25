@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { AuthorStyle, Chapter, SpiceLevel, StoryLength } from "../../lib/types";
@@ -155,10 +155,13 @@ export const generateNewOutline = async (storyOutline: {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(
-        `🔮 Generating new story outline with Gemini (attempt ${attempt}/${MAX_RETRIES})`
+        `🔮 Generating new story outline with OpenRouter Gemini (attempt ${attempt}/${MAX_RETRIES})`
       );
+      const openrouter = createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+      });
       const { text } = await generateText({
-        model: google("gemini-2.5-pro"),
+        model: openrouter("google/gemini-2.5-pro"),
         system,
         prompt,
         temperature: 0.5,

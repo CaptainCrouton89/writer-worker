@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { Chapter } from "../../lib/types.js";
 
@@ -186,8 +186,11 @@ IMPORTANT: Create a dense, detailed cinematic description without unnecessary pr
     console.log(userPrompt);
 
     // Debug: Let's try without maxTokens limit to see what happens
+    const openrouter = createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
     const result = await generateText({
-      model: google("gemini-2.5-pro"),
+      model: openrouter("google/gemini-2.5-pro"),
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.7,

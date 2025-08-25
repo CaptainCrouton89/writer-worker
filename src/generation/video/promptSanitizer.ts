@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 
 interface SanitizationLevel {
@@ -44,8 +44,11 @@ ${prompt}`;
   try {
     console.log(`🧹 Sanitizing prompt at level ${level.level}`);
     
+    const openrouter = createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
     const result = await generateText({
-      model: google("gemini-2.5-pro"),
+      model: openrouter("google/gemini-2.5-pro"),
       system: systemPrompt,
       prompt: userPrompt,
       temperature: 0.7,

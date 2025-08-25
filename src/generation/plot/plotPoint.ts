@@ -1,4 +1,3 @@
-import { google } from "@ai-sdk/google";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
@@ -220,8 +219,11 @@ export const generatePlotPoint = async (
               seed: Math.floor(Math.random() * 1000000),
             });
           } else if (modelConfig.provider === "google") {
+            const openrouter = createOpenRouter({
+              apiKey: process.env.OPENROUTER_API_KEY,
+            });
             result = await generateText({
-              model: google(modelConfig.modelName.replace("google/", "")),
+              model: openrouter(modelConfig.modelName),
               prompt,
               system,
               temperature: 0.8,
@@ -249,11 +251,15 @@ export const generatePlotPoint = async (
           });
         }
       } catch (openrouterError) {
-        console.log(`🔄 OpenRouter failed, falling back to Google...`);
+        console.log(`🔄 OpenRouter with primary model failed, trying OpenRouter with Gemini...`);
 
         try {
+          const openrouter = createOpenRouter({
+            apiKey: process.env.OPENROUTER_API_KEY,
+          });
+
           result = await generateText({
-            model: google("gemini-2.5-pro"),
+            model: openrouter("google/gemini-2.5-pro"),
             prompt,
             system,
             temperature: 0.8,
@@ -261,24 +267,7 @@ export const generatePlotPoint = async (
             topK: 50,
             seed: Math.floor(Math.random() * 1000000),
           });
-        } catch (googleError) {
-          console.log(`🔄 Google failed, trying OpenRouter with Gemini...`);
-
-          const openrouter = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-          });
-
-          try {
-            result = await generateText({
-              model: openrouter("google/gemini-2.5-pro"),
-              prompt,
-              system,
-              temperature: 0.8,
-              topP: 0.9,
-              topK: 50,
-              seed: Math.floor(Math.random() * 1000000),
-            });
-          } catch (apiError) {
+        } catch (apiError) {
             // Check if this is a content block error
             const errorCause = (apiError as any)?.cause;
             const errorValue = errorCause?.value;
@@ -311,8 +300,7 @@ export const generatePlotPoint = async (
               );
             }
 
-            throw apiError; // Re-throw to be caught by outer catch
-          }
+          throw apiError; // Re-throw to be caught by outer catch
         }
       }
 
