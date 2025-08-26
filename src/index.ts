@@ -11,6 +11,8 @@ async function main() {
   console.log(`🔧 Poll interval: ${process.env.POLL_INTERVAL_MS || 5000}ms`);
   console.log(`♻️  Max retries: ${process.env.MAX_RETRIES || 2}`);
   console.log(`🔄 Concurrency: ${process.env.WORKER_CONCURRENCY || 2}`);
+  console.log(`🔔 Webhook URL: ${process.env.NEXT_PUBLIC_SITE_URL ? process.env.NEXT_PUBLIC_SITE_URL + '/api/generation-complete' : 'Not configured'}`);
+  console.log(`🔑 Webhook API Key: ${process.env.STORY_GENERATION_API_KEY ? 'Configured' : 'Not configured'}`);
 
   try {
     // Start health check server first

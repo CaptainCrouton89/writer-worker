@@ -23,14 +23,17 @@ import { Tables } from "./lib/supabase/types.js";
 import { Chapter, GenerationJob, Sequence } from "./lib/types.js";
 import { OutlineProcessor } from "./services/outline-processor.js";
 import { SequenceService } from "./services/sequence-service.js";
+import { WebhookService } from "./services/webhook-service.js";
 
 export class JobProcessorV2 {
   private sequenceService: SequenceService;
   private outlineProcessor: OutlineProcessor;
+  private webhookService: WebhookService;
 
   constructor() {
     this.sequenceService = new SequenceService();
     this.outlineProcessor = new OutlineProcessor();
+    this.webhookService = new WebhookService();
   }
 
   async processJob(job: GenerationJob): Promise<void> {
@@ -123,7 +126,7 @@ export class JobProcessorV2 {
 
     // Step 7: Complete the job
     await this.updateJobProgress(job.id, 100, JOB_STEPS.COMPLETING_JOB);
-    await this.completeJob(job.id, job.chapter_id);
+    await this.completeJob(job.id, job.chapter_id, job.sequence_id, chapterIndex === 0);
   }
 
   private async processVideoGenerationJob(job: GenerationJob): Promise<void> {
@@ -148,7 +151,7 @@ export class JobProcessorV2 {
     // Step 3: Fetch context data
     await this.updateJobProgress(job.id, 10, VIDEO_STEPS.FETCHING_CONTEXT);
 
-    const [quote, chapter, sequence] = await Promise.all([
+    const [quote, _chapter, sequence] = await Promise.all([
       this.fetchFeaturedQuote(job.quote_id),
       fetchChapter(job.chapter_id),
       this.sequenceService.fetchSequence(job.sequence_id),
@@ -169,7 +172,9 @@ export class JobProcessorV2 {
 
     // Step 6: Complete the job
     await this.updateJobProgress(job.id, 100, VIDEO_STEPS.COMPLETED);
-    await this.completeJob(job.id, job.chapter_id);
+    // For video generation, determine if it's first chapter
+    const chapterIndex = await getChapterIndex(job.chapter_id);
+    await this.completeJob(job.id, job.chapter_id, job.sequence_id, chapterIndex === 0);
 
     console.log(
       `✅ Video generation completed for quote ${job.quote_id}: ${videoUrl}`
@@ -369,7 +374,12 @@ export class JobProcessorV2 {
     );
   }
 
-  private async completeJob(jobId: string, chapterId: string): Promise<void> {
+  private async completeJob(
+    jobId: string, 
+    chapterId: string,
+    sequenceId: string,
+    isFirstChapter: boolean
+  ): Promise<void> {
     const { error } = await supabase
       .from("generation_jobs")
       .update({
@@ -386,6 +396,14 @@ export class JobProcessorV2 {
     }
 
     console.log(`✅ Completed job ${jobId} for chapter ${chapterId}`);
+
+    // Send webhook notification
+    await this.webhookService.notifyJobCompletion({
+      jobId,
+      sequenceId,
+      chapterId,
+      isFirstChapter,
+    });
   }
 
   private async handleJobError(jobId: string, error: Error): Promise<void> {
