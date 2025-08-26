@@ -77,7 +77,7 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 - **Use vocabulary appropriate for the setting**. For example, a story in a fantasy setting should not include scientific terms, since those are modern concepts.
 - **When you have to fill space but don't have anything to write, add more dialogue and action.** Drawn out descriptions do not make for good fiction.
 - **Show don't tell.** If a character feels something complicated, it doesn't always need to be explicitly stated.
-- **Use varied word choice and sentence structure.**  
+- **Use varied word choice, sentence structure, and sentence length.**
 - **Be bold.** It's creative writing, not a book report.
 - **Always respond by continuing the story.**
 </desired_behavior>
