@@ -65,9 +65,10 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 </avoided_behavior>
 
 <story_length_guidelines>
-- Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
-  STORY_LENGTH_CONFIG[length].wordTarget
-} words)
+- Aim to write ${
+  STORY_LENGTH_CONFIG[length].pagesPerBullet
+} pages of content (${STORY_LENGTH_CONFIG[length].wordTarget} words)
+- Use your judgement—if the plot point warrants it, you can write more or less than the target.
 </story_length_guidelines>
 
 <desired_behavior>
