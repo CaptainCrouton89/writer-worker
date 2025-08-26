@@ -12,7 +12,9 @@ const getIntroduction = (
   length: number
 ) => {
   if (firstChapter && firstPlotPoint) {
-    return `You are tasked with writing the **first section of the story**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point. Unless otherwise specified, the story should be written in past tense.`;
+    return `You are tasked with writing the **first section of the story**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point. Unless otherwise specified, the story should be written in past tense.
+  
+  Remember, since this is the very first section of the story, it should be a hook that draws the reader in. Be bold and creative.`;
   }
   if (firstPlotPoint) {
     return `You are tasked with writing the **first plot point of the chapter**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
@@ -23,6 +25,17 @@ const getIntroduction = (
   if (lastPlotPoint) {
     return `You are tasked with writing the last section of the chapter. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content.`;
   }
+};
+
+const getReminderContent = (isFirstSectionOfFirstChapter: boolean) => {
+  let prompt = "";
+  if (isFirstSectionOfFirstChapter) {
+    prompt = `This is the very first section of the story. Write boldly and creatively—this needs to be a hook that draws the reader in.
+  `;
+  } else {
+    prompt = `Continue the story from where it left off.`;
+  }
+  return prompt;
 };
 
 const systemPrompt = (
@@ -93,8 +106,7 @@ const getPrompt = (
   chapterIndex: number,
   plotPointIndex: number,
   previousChapterContent: string
-) => `
-<story_outline>
+) => `<story_outline>
 # Story Description
 ${userPrompt}
 
@@ -119,7 +131,9 @@ ${chapters[chapterIndex].plotPoints
 ${previousChapterContent}
 </preceeding_content>
 
-Continue the story from it was left off. Write the content for the plot point: "${
+${getReminderContent(
+  chapterIndex === 0 && plotPointIndex === 0
+)} Write the content for the plot point: "${
   chapters[chapterIndex].plotPoints[plotPointIndex]
 }". Aim for ${
   STORY_LENGTH_CONFIG[length].pageDescription
