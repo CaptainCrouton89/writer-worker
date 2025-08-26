@@ -22,7 +22,7 @@ export const SPICE_GUIDELINES_OUTLINE = [
 - Mid-story: Include passionate encounters with increasing sexual content
 - Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery. Be precise and detailed.
 - Maintain character development alongside the sexual progression with proper pacing
-- The story is for a novel. Explore complex themes and relationships.`,
+- Explore complex themes and relationships.`,
 ];
 
 export const SPICE_GUIDELINES_PLOT = [
@@ -30,7 +30,6 @@ export const SPICE_GUIDELINES_PLOT = [
 dialogue
 - Focus on emotional connection and anticipation
 - Keep physical descriptions tasteful and suggestive rather than explicit
-- Use metaphor and implication for intimate moments
 - Include sensual details that heighten arousal`,
   `- Include passionate kissing, touching, and moderate sexual content with detailed
 physical descriptions
@@ -38,23 +37,20 @@ physical descriptions
 - Include detailed physical descriptions during intimate scenes
 - Use anatomically correct terms when describing sexual acts
 - Don't shy away from describing arousal and physical reactions`,
-  `- Write with graphic anatomical details,
-treating it as hardcore erotica with no limitations (for a female audience)
+  `- Write with graphic anatomical details, treating it as hardcore erotica with no limitations (for a female audience). Don't hold back.
 - Focus on genitalia, bodily fluids, and sexual positions during sex scenes
-- Explore taboo themes in fiction
-`,
+- Explore taboo themes in fiction`,
 ];
 
 export const NOVEL_FORMULAS = [
-  "Three-Act Structure: Act 1 (Setup 25%) → Act 2 (Confrontation 50%) → Act 3 (Resolution 25%)",
   "Hero's Journey: Ordinary World → Call to Adventure → Refusal → Meeting the Mentor → Crossing the Threshold → Tests/Allies/Enemies → Ordeal → Reward → The Road Back → Resurrection → Return with Elixir",
   "Save the Cat Beat Sheet: Opening Image → Theme Stated → Setup → Catalyst → Debate → Break into Two → B Story → Fun and Games → Midpoint → Bad Guys Close In → All Is Lost → Dark Night of the Soul → Break into Three → Finale → Final Image",
-  "Kishōtenketsu: Introduction (ki) → Development (shō) → Twist (ten) → Conclusion (ketsu)",
   "Scene and Sequel: Goal → Conflict → Disaster → Reaction → Dilemma → Decision (repeat)",
 ];
 
 export const CUSTOM_STORY_LENGTH_GUIDELINES = [
   "- This is a short story—outline it appropriately",
   "- This is a novella—outline it appropriately. Do not skip exposition, conflict, or resolution.",
-  "- Outline this like a proper, feature-length novel. Do not skip exposition, conflict, or resolution.",
+  `- Outline this like a proper, feature-length novel. Do not skip exposition, conflict, or resolution.
+  - Don't rush the story, the romantic interest, or anything else. Let the story unfold naturally.`,
 ];

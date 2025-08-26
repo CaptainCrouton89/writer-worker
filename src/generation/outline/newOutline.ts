@@ -2,14 +2,17 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { AuthorStyle, Chapter, SpiceLevel, StoryLength } from "../../lib/types";
-import { STYLE_GUIDELINES, SPICE_GUIDELINES_OUTLINE, NOVEL_FORMULAS, CUSTOM_STORY_LENGTH_GUIDELINES } from "../constants";
+import {
+  CUSTOM_STORY_LENGTH_GUIDELINES,
+  NOVEL_FORMULAS,
+  SPICE_GUIDELINES_OUTLINE,
+  STYLE_GUIDELINES,
+} from "../constants";
 import { parseOutlineText } from "./types";
-
 
 const getRandomFormula = (): string => {
   return NOVEL_FORMULAS[Math.floor(Math.random() * NOVEL_FORMULAS.length)];
 };
-
 
 const systemPrompt = (outline: {
   spiceLevel: SpiceLevel;
@@ -17,7 +20,9 @@ const systemPrompt = (outline: {
   structureFormula: string;
   author_style: AuthorStyle;
 }) => `
-You are an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
+You are ${
+  STYLE_GUIDELINES[outline.author_style]
+}, an expert story architect specializing in adult romance fiction. Your task is to create compelling, well-structured story outlines that balance character development with intimate relationships. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
 ${SPICE_GUIDELINES_OUTLINE[outline.spiceLevel] || SPICE_GUIDELINES_OUTLINE[0]}
@@ -32,16 +37,17 @@ Adapt this structure to fit the story content and chapter count, using it as ins
 </structure_formula>
 
 <outline_structure>
-- The outline is for a ${STORY_LENGTH_CONFIG[outline.story_length].type} story.
-- Create ${STORY_LENGTH_CONFIG[outline.story_length].chapterCount} chapters
+- The outline is for a ${
+  STORY_LENGTH_CONFIG[outline.story_length].chapterCount
+} chapter ${STORY_LENGTH_CONFIG[outline.story_length].type}.
 - Each chapter should have exactly ${
   STORY_LENGTH_CONFIG[outline.story_length].bulletsPerChapter
-} plot points
+} plot points. 
 - Each plot point should represent approximately ${
   STORY_LENGTH_CONFIG[outline.story_length].pagesPerBullet
-} pages of content, or about ${
+} pages of content (about ${
   STORY_LENGTH_CONFIG[outline.story_length].wordTarget
-}
+} words).
 - Be creative and original in the story plot, while remaining within the bounds of the user's request.
 ${CUSTOM_STORY_LENGTH_GUIDELINES[outline.story_length]}
 </outline_structure>
@@ -51,6 +57,7 @@ Write concise bullet points that are 2-3 sentences long. Each should:
 - Provide concrete story events that can be expanded into detailed content
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
 - Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Aim for 2 sentences per bullet. Do not be vague.
+- Do not put too many story beats in a single chapter—otherwise the story will feel rushed.
 </bullet_point_style>
 
 <output_format>
