@@ -13,12 +13,13 @@ export interface Chapter {
 export interface UserPrompt {
   prompt: string;
   tags: string[];
-  style: AuthorStyle;
   spice_level: SpiceLevel;
   story_length: StoryLength;
   insertion_chapter_index: number;
   processed: boolean;
   processed_at: number;
+  style: AuthorStyle;
+  generateCoverImage?: boolean;
 }
 
 export type UserPromptHistory = UserPrompt[];

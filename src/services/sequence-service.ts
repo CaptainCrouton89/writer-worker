@@ -71,6 +71,7 @@ export class SequenceService {
       style: currentPrompt.style,
       processed: true,
       processed_at: Date.now(),
+      generateCoverImage: currentPrompt.generateCoverImage,
     };
     prompts[promptIndex] = updatedPrompt;
 
