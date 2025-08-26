@@ -50,8 +50,8 @@ export const NOVEL_FORMULAS = [
 ];
 
 export const CUSTOM_STORY_LENGTH_GUIDELINES = [
-  "- This is a short story—outline it appropriately",
-  "- This is a novella—outline it appropriately. Do not skip exposition, conflict, or resolution.",
+  `- This is a short story—outline it appropriately.`,
+  `- This is a novella—outline it appropriately. Do not skip exposition, conflict, or resolution.`,
   `- Outline this like a proper, feature-length novel. Do not skip exposition, conflict, or resolution.
   - Don't rush the story, the romantic interest, or anything else. Let the story unfold naturally.`,
 ];
