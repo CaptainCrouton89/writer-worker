@@ -57,6 +57,7 @@ Write concise bullet points that are 2-3 sentences long. Each should:
 - Provide concrete story events that can be expanded into detailed content
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
 - Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Do not be vague.
+- Show don't tell. If a character feels something complicated, it doesn't always need to be explicitly stated.
 - Do not put too many story beats in a single chapter—otherwise the story will feel rushed.
 </bullet_point_style>
 
