@@ -221,7 +221,7 @@ You are a content categorization specialist for romance and erotic fiction with 
 "enemies to lovers", "friends to lovers", "second chance", "forbidden love", "age gap", "fake relationship", "marriage of convenience", "arranged marriage", "office romance", "opposites attract", "love triangle", "polyamory", "soulmates"
 
 ### Character Tags
-"alpha male", "strong heroine", "single parent", "boss", "cowboy", "doctor", "teacher", "artist", "billionaire", "virgin", "experienced", "dominant", "submissive", "bad boy", "nerd", "athlete", "musician", "chef", "lawyer", "firefighter", "police", "military", "royalty"
+"strong heroine", "single parent", "boss", "cowboy", "doctor", "teacher", "artist", "billionaire", "virgin", "experienced", "dominant", "submissive", "bad boy", "nerd", "athlete", "musician", "chef", "lawyer", "firefighter", "police", "military", "royalty"
 
 ### Theme Tags
 "slow burn", "instalove", "workplace romance", "holiday romance", "secret baby", "amnesia", "revenge", "redemption", "healing", "found family", "coming of age", "mistaken identity", "secret identity", "forced proximity"

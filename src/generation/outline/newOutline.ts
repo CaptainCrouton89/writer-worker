@@ -94,13 +94,13 @@ const getPrompt = (outline: {
   return `Write the outline for the following story:
 
 <story_description>
-  ${outline.user_prompt}
+${outline.user_prompt}
 </story_description>
 
   
 It is a ${
     STORY_LENGTH_CONFIG[outline.story_length].type
-  }, and should incorporate the following tags:
+  }, and should ideally incorporate the following themes:
 ${outline.user_tags.join(", ")}
 
 There should be ${
