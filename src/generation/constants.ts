@@ -21,6 +21,7 @@ export const SPICE_GUIDELINES_OUTLINE = [
 - Early chapters: Establish characters and plot with underlying sexual tension
 - Mid-story: Include passionate encounters with increasing sexual content
 - Later chapters: Feature highly explicit sexual scenarios with graphic descriptions and vivid imagery. Be precise and detailed.
+- Defer to the user's request. If you sense the user wants something hardcore, go all out.
 - Maintain character development alongside the sexual progression with proper pacing
 - Explore complex themes and relationships.`,
 ];
