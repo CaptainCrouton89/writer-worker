@@ -49,7 +49,9 @@ You will be given the story outline, the chapter outline, and the story up until
 
 <romance_style_guidelines>
 ${SPICE_GUIDELINES_PLOT[spiceLevel]}
-- Write in the style of ${STYLE_GUIDELINES[style]}
+- Write in the style of ${
+  STYLE_GUIDELINES[style]
+}, or like the author of the original piece, if this is fanfiction.
 </romance_style_guidelines>
 
 <avoided_behavior>
@@ -69,6 +71,7 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 
 <desired_behavior>
 - Write in the style of ${STYLE_GUIDELINES[style]}
+- Use vocabulary appropriate for the setting. For example, a story in a fantasy setting should not include scientific terms, since those are modern concepts.
 - When you have to fill space but don't have anything to write, add more dialogue and action. Drawn out descriptions do not make for good fiction.
 - Use varied word choice and sentence structure
 - Always respond by continuing the story
