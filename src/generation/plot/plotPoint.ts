@@ -64,7 +64,7 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 <story_length_guidelines>
 - Write ${STORY_LENGTH_CONFIG[length].pagesPerBullet} pages of content (${
   STORY_LENGTH_CONFIG[length].wordTarget
-})
+} words)
 </story_length_guidelines>
 
 <desired_behavior>
@@ -77,7 +77,6 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story. And remember—you are ${
   STYLE_GUIDELINES[style]
 }.`;
-
 
 const getPrompt = (
   length: number,
@@ -251,7 +250,9 @@ export const generatePlotPoint = async (
           });
         }
       } catch (openrouterError) {
-        console.log(`🔄 OpenRouter with primary model failed, trying OpenRouter with Gemini...`);
+        console.log(
+          `🔄 OpenRouter with primary model failed, trying OpenRouter with Gemini...`
+        );
 
         try {
           const openrouter = createOpenRouter({
@@ -268,37 +269,37 @@ export const generatePlotPoint = async (
             seed: Math.floor(Math.random() * 1000000),
           });
         } catch (apiError) {
-            // Check if this is a content block error
-            const errorCause = (apiError as any)?.cause;
-            const errorValue = errorCause?.value;
+          // Check if this is a content block error
+          const errorCause = (apiError as any)?.cause;
+          const errorValue = errorCause?.value;
 
-            if (errorValue?.promptFeedback?.blockReason) {
-              const blockReason = errorValue.promptFeedback.blockReason;
-              console.error(`🚫 Content blocked by AI model: ${blockReason}`);
+          if (errorValue?.promptFeedback?.blockReason) {
+            const blockReason = errorValue.promptFeedback.blockReason;
+            console.error(`🚫 Content blocked by AI model: ${blockReason}`);
 
-              // Throw a more informative error
-              throw new Error(
-                `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
-              );
-            }
+            // Throw a more informative error
+            throw new Error(
+              `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
+            );
+          }
 
-            // Log raw API error details for other errors
-            console.error(`🔥 Raw API Error:`, {
-              name: apiError?.constructor?.name,
-              message: (apiError as any)?.message,
-              status: (apiError as any)?.status,
-              statusText: (apiError as any)?.statusText,
-              cause: (apiError as any)?.cause,
-              response: (apiError as any)?.response,
-            });
+          // Log raw API error details for other errors
+          console.error(`🔥 Raw API Error:`, {
+            name: apiError?.constructor?.name,
+            message: (apiError as any)?.message,
+            status: (apiError as any)?.status,
+            statusText: (apiError as any)?.statusText,
+            cause: (apiError as any)?.cause,
+            response: (apiError as any)?.response,
+          });
 
-            // If it's an API response error, try to log the raw response body
-            if ((apiError as any)?.response?.body) {
-              console.error(
-                `🔥 Raw response body:`,
-                (apiError as any).response.body
-              );
-            }
+          // If it's an API response error, try to log the raw response body
+          if ((apiError as any)?.response?.body) {
+            console.error(
+              `🔥 Raw response body:`,
+              (apiError as any).response.body
+            );
+          }
 
           throw apiError; // Re-throw to be caught by outer catch
         }
