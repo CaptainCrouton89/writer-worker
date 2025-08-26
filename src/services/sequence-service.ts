@@ -104,7 +104,6 @@ export class SequenceService {
 
     if (metadata.title !== undefined) {
       updates.name = metadata.title;
-      updates.title = metadata.title;
     }
     if (metadata.description !== undefined) {
       updates.description = metadata.description;

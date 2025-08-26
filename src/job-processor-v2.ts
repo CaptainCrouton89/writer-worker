@@ -164,7 +164,7 @@ export class JobProcessorV2 {
       quote,
       chapterContent,
       storyOutline: sequence.chapters,
-      sequenceTitle: sequence.title || undefined,
+      sequenceTitle: sequence.name || undefined,
     });
 
     // Step 6: Complete the job
@@ -285,7 +285,7 @@ export class JobProcessorV2 {
       sequence.user_prompt_history[sequence.user_prompt_history.length - 1];
 
     const outlineText = `
-    ${sequence.title}
+    ${sequence.name}
     ${sequence.description}
     Tags: ${sequence.tags.join(", ")}
     Trigger Warnings${sequence.trigger_warnings.join(", ")}

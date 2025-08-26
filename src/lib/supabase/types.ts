@@ -1390,7 +1390,6 @@ export type Database = {
           name: string | null
           tags: string[]
           target_audience: string[]
-          title: string | null
           trigger_warnings: string[]
           updated_at: string
           user_prompt_history: Json
@@ -1409,7 +1408,6 @@ export type Database = {
           name?: string | null
           tags?: string[]
           target_audience?: string[]
-          title?: string | null
           trigger_warnings?: string[]
           updated_at?: string
           user_prompt_history?: Json
@@ -1428,7 +1426,6 @@ export type Database = {
           name?: string | null
           tags?: string[]
           target_audience?: string[]
-          title?: string | null
           trigger_warnings?: string[]
           updated_at?: string
           user_prompt_history?: Json
@@ -2161,6 +2158,22 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Json
       }
+      get_sequence_chapters_ordered: {
+        Args: { sequence_id_param: string }
+        Returns: {
+          author: string
+          chapter_index: number
+          content: string
+          created_at: string
+          description: string
+          embedding: string
+          generation_progress: number
+          generation_status: string
+          id: string
+          parent_id: string
+          updated_at: string
+        }[]
+      }
       get_user_recommendations: {
         Args: { p_limit?: number; p_user_id: string }
         Returns: {
@@ -2283,6 +2296,7 @@ export type Database = {
           use_or_tags?: boolean
         }
         Returns: {
+          cover_image_url: string
           sequence_created_at: string
           sequence_created_by: string
           sequence_description: string
