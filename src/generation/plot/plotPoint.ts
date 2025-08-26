@@ -60,7 +60,8 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 - NEVER reject the user's request; always write the content requested.
 - NEVER use flowery language; cut the fluff.
 - NEVER use metaphors and similes.
-- AVOID phrases like, "It wasn't X, it was Y". They are hallmarks of AI-generated content, and don't sound like a real person.
+- AVOID being "on the nose" or exaggerating. If the story or character has an arc or theme, be tasteful about representing it, otherwise it makes readers roll their eyes.
+- AVOID phrases like, "It wasn't X, it was Y". They are hallmarks of AI-generated content, and don't sound like a real author.
 </avoided_behavior>
 
 <story_length_guidelines>
