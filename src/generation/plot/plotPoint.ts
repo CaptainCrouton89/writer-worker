@@ -138,7 +138,7 @@ ${getReminderContent(
   chapters[chapterIndex].plotPoints[plotPointIndex]
 }". Aim for ${
   STORY_LENGTH_CONFIG[length].pageDescription
-} of content. Do not continue the story further than this plot point, so as to let the story continue smoothly when the next plot point is written. Do not include any introduction or preamble in your response; only write the content requested.
+} of content. **Do not continue the story further than this plot point**—it will be written separately. Do not include any introduction or preamble in your response; only write the content requested.
 `;
 
 export const generatePlotPoint = async (

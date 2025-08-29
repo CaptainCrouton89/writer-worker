@@ -105,13 +105,17 @@ const getPrompt = (
 ${storyOutlineBefore}
 </old_outline>
 
-But *now*, from Chapter ${startingChapterNumber} onward, the story should be adjusted like this:
+But *now*, from Chapter ${startingChapterNumber} onward, I want to make the following changes:
 
+<user_request>
 ${userPrompt}
+</user_request>
+
+These changes haven't occurred yet, so incorporate them into the outline.
 
 Write ONLY the remaining ${remainingChapterCount} chapters (Chapter ${startingChapterNumber} through Chapter ${
     startingChapterNumber + remainingChapterCount - 1
-  }), continuing from where the old outline left off.
+  }), continuing from where the old outline left off. 
   `;
 };
 
