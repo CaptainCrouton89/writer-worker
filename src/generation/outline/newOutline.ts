@@ -28,6 +28,7 @@ You are ${
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
 ${SPICE_GUIDELINES_OUTLINE[outline.spiceLevel] || SPICE_GUIDELINES_OUTLINE[0]}
 - Write in the style of ${STYLE_GUIDELINES[outline.author_style]}
+-  The story should be told from the perspective of the main character: no switching POVs.
 - Be creative and original in the story plot, while remaining within the bounds of the user's request.
 </story_guidelines>
 
@@ -149,18 +150,20 @@ export const generateNewOutline = async (storyOutline: {
     structureFormula: selectedFormula,
     author_style: storyOutline.author_style,
   });
-  const systemPreview = system.length > 200
-    ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
-    : system;
+  const systemPreview =
+    system.length > 200
+      ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
+      : system;
   console.log(`System prompt: ${systemPreview}`);
   const prompt = getPrompt({
     user_prompt: storyOutline.user_prompt,
     story_length: storyOutline.story_length,
     user_tags: storyOutline.user_tags as string[],
   });
-  const promptPreview = prompt.length > 200
-    ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
-    : prompt;
+  const promptPreview =
+    prompt.length > 200
+      ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
+      : prompt;
   console.log(`User prompt: ${promptPreview}`);
 
   const MAX_RETRIES = 3;

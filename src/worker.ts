@@ -50,7 +50,7 @@ async function pollAndProcessJobs(processor: JobProcessorV2) {
   try {
     // Atomically claim jobs using the database function
     const { data: jobs, error } = await supabase
-      .rpc("claim_pending_jobs", { worker_count: config.workerConcurrency });
+      .rpc("claim_pending_jobs" as any, { worker_count: config.workerConcurrency });
 
     const generationJobs = jobs as unknown as GenerationJob[];
 
@@ -59,7 +59,7 @@ async function pollAndProcessJobs(processor: JobProcessorV2) {
       return;
     }
 
-    if (!jobs || jobs.length === 0) {
+    if (!jobs || !Array.isArray(jobs) || jobs.length === 0) {
       return;
     }
 
