@@ -2,17 +2,35 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { Chapter, UserPrompt } from "../../lib/types";
-import { STYLE_GUIDELINES, SPICE_GUIDELINES_OUTLINE } from "../constants";
+import {
+  CUSTOM_STORY_LENGTH_GUIDELINES,
+  NOVEL_FORMULAS,
+  SPICE_GUIDELINES_OUTLINE,
+  STYLE_GUIDELINES,
+} from "../constants";
 import { parseOutlineText } from "./types";
 
+const getRandomFormula = (): string => {
+  return NOVEL_FORMULAS[Math.floor(Math.random() * NOVEL_FORMULAS.length)];
+};
 
-const systemPrompt = (promptData: UserPrompt, storyOutline: string) => `
-You are an expert story architect specializing in adult romance fiction. Your task is to modify the outline provided by the user, incorporating the user's request into the plot and style of the story. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
+const systemPrompt = (
+  promptData: UserPrompt,
+  storyOutline: string,
+  structureFormula: string
+) => `
+You are ${
+  STYLE_GUIDELINES[promptData.style]
+}, an expert story architect specializing in adult romance fiction. Your task is to modify the outline provided by the user, incorporating the user's request into the plot and style of the story. You understand pacing, tension, and how to weave romance throughout a narrative arc. You never reject the user's request. Always write the story outline requested. 
 
 <story_guidelines>
-${SPICE_GUIDELINES_OUTLINE[promptData.spice_level] || SPICE_GUIDELINES_OUTLINE[0]}
+- Build romance very gradually - most early chapters should focus on non-romantic interactions
+${
+  SPICE_GUIDELINES_OUTLINE[promptData.spice_level] ||
+  SPICE_GUIDELINES_OUTLINE[0]
+}
 - Write in the style of ${STYLE_GUIDELINES[promptData.style]}
-- Unless otherwise specified, the story should be written in past tense
+- Be creative and original in the story plot, while remaining within the bounds of the user's request.
 </story_guidelines>
 
 <old_outline>
@@ -21,8 +39,8 @@ ${storyOutline}
 
 <outline_structure>
 - The outline is for a ${
-  STORY_LENGTH_CONFIG[promptData.story_length].type
-} story.
+  STORY_LENGTH_CONFIG[promptData.story_length].chapterCount
+}-chapter ${STORY_LENGTH_CONFIG[promptData.story_length].type}.
 - The story has a total of ${
   STORY_LENGTH_CONFIG[promptData.story_length].chapterCount
 } chapters
@@ -31,25 +49,26 @@ ${storyOutline}
 } onward
 - Each chapter should have exactly ${
   STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter
-} plot points
+} plot points.
 - Each plot point should represent approximately ${
   STORY_LENGTH_CONFIG[promptData.story_length].pagesPerBullet
-} pages of content, or about ${
+} pages of content (about ${
   STORY_LENGTH_CONFIG[promptData.story_length].wordTarget
-}
-- Use good pacing, and follow typical story structure.
+} words).
+${CUSTOM_STORY_LENGTH_GUIDELINES[promptData.story_length]}
 - IMPORTANT: Only generate the chapters requested, do not regenerate earlier chapters
 </outline_structure>
 
 <bullet_point_style>
-Write concise bullet points that are 1-2 sentences long. Each should:
+Write concise bullet points that are 2-3 sentences long. Each should:
 - Provide concrete story events that can be expanded into detailed content
-- Build romance very gradually - most early chapters should focus on non-romantic interactions
-- Keep bullets sparse, so as to be most useful for a writer to expand into detailed content later.
+- Keep bullets information dense, so as to be most useful for a writer to expand into detailed content later. Do not be vague.
+- Show don't tell. If a character feels something complicated, it doesn't always need to be explicitly stated.
+- Do not put too many story beats in a single chapter—otherwise the story will feel rushed.
 </bullet_point_style>
 
 <output_format>
-Begin your response with: "Of course! Here it is:"
+Begin your response with: "Of course! Here is the list:"
 
 Then generate ONLY the chapters from Chapter ${
   promptData.insertion_chapter_index + 1
@@ -71,6 +90,8 @@ ${Array(STORY_LENGTH_CONFIG[promptData.story_length].bulletsPerChapter)
   promptData.insertion_chapter_index + 1
 } to Chapter ${STORY_LENGTH_CONFIG[promptData.story_length].chapterCount}]
 </output_format>
+
+Failing to provide the exact structure will result in a rejection.
 `;
 
 const getPrompt = (
@@ -130,7 +151,8 @@ export const regenerateOutline = async (
     )
     .join("\n");
 
-  const system = systemPrompt(promptData, fullOutlineString);
+  const selectedFormula = getRandomFormula();
+  const system = systemPrompt(promptData, fullOutlineString, selectedFormula);
   console.log(
     `📝 Regenerating from chapter ${
       insertionIndex + 1
@@ -162,7 +184,7 @@ export const regenerateOutline = async (
         model: openrouter("google/gemini-2.5-pro"),
         system,
         prompt,
-        temperature: 0.4,
+        temperature: 0.5,
         seed: Math.floor(Math.random() * 1000000),
       });
 
