@@ -157,11 +157,15 @@ export const regenerateOutline = async (
 
   const selectedFormula = getRandomFormula();
   const system = systemPrompt(promptData, fullOutlineString, selectedFormula);
+  const systemPreview = system.length > 200
+    ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
+    : system;
   console.log(
     `📝 Regenerating from chapter ${
       insertionIndex + 1
     }, keeping first ${insertionIndex} chapters`
   );
+  console.log(`System prompt: ${systemPreview}`);
 
   const prompt = getPrompt(
     outlineStringBefore,
@@ -169,7 +173,10 @@ export const regenerateOutline = async (
     remainingChapterCount,
     insertionIndex + 1
   );
-  console.log(prompt);
+  const promptPreview = prompt.length > 200
+    ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
+    : prompt;
+  console.log(`User prompt: ${promptPreview}`);
 
   const MAX_RETRIES = 3;
   let lastError: Error | null = null;

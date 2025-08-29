@@ -48,18 +48,14 @@ export async function startWorker() {
 
 async function pollAndProcessJobs(processor: JobProcessorV2) {
   try {
-    // Query for pending jobs
+    // Atomically claim jobs using the database function
     const { data: jobs, error } = await supabase
-      .from("generation_jobs")
-      .select("*")
-      .eq("status", JOB_STATUS.PENDING)
-      .order("created_at", { ascending: true })
-      .limit(config.workerConcurrency);
+      .rpc("claim_pending_jobs", { worker_count: config.workerConcurrency });
 
     const generationJobs = jobs as unknown as GenerationJob[];
 
     if (error) {
-      console.error("❌ Error fetching jobs:", error);
+      console.error("❌ Error claiming jobs:", error);
       return;
     }
 
@@ -67,7 +63,7 @@ async function pollAndProcessJobs(processor: JobProcessorV2) {
       return;
     }
 
-    console.log(`📋 Found ${jobs.length} pending job(s)`);
+    console.log(`📋 Claimed ${jobs.length} job(s) for processing`);
 
     // Process jobs concurrently using the new JobProcessor
     const promises = generationJobs.map((job) => processor.processJob(job));

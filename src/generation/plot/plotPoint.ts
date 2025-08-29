@@ -176,7 +176,10 @@ export const generatePlotPoint = async (
     plotPointIndex === chapters[chapterIndex].plotPoints.length - 1
   );
 
-  console.log(system);
+  const systemPreview = system.length > 200
+    ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
+    : system;
+  console.log(`System prompt: ${systemPreview}`);
 
   const prompt = getPrompt(
     userPrompt.story_length,
@@ -187,7 +190,10 @@ export const generatePlotPoint = async (
     truncatedContentSoFar
   );
 
-  console.log(prompt);
+  const promptPreview = prompt.length > 200
+    ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
+    : prompt;
+  console.log(`User prompt: ${promptPreview}`);
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
@@ -213,14 +219,22 @@ export const generatePlotPoint = async (
       console.log(
         `🔍 Chapter: ${chapterIndex + 1} - ${chapters[chapterIndex]?.name}`
       );
+      const plotPointText = chapters[chapterIndex]?.plotPoints[plotPointIndex] || '';
+      const plotPointPreview = plotPointText.length > 200 
+        ? `${plotPointText.substring(0, 100)}...${plotPointText.substring(plotPointText.length - 100)}`
+        : plotPointText;
       console.log(
-        `🔍 Plot point: ${plotPointIndex + 1} - ${chapters[
-          chapterIndex
-        ]?.plotPoints[plotPointIndex]?.substring(0, 100)}...`
+        `🔍 Plot point: ${plotPointIndex + 1} - ${plotPointPreview}`
       );
 
-      console.log("prompt:", prompt);
-      console.log("system:", system);
+      const debugPromptPreview = prompt.length > 200
+        ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
+        : prompt;
+      const debugSystemPreview = system.length > 200
+        ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
+        : system;
+      console.log("prompt:", debugPromptPreview);
+      console.log("system:", debugSystemPreview);
 
       let result;
       try {
@@ -329,12 +343,16 @@ export const generatePlotPoint = async (
       }
 
       // Log detailed response information for debugging
+      const responseText = result.text || '';
+      const responsePreview = responseText.length > 200
+        ? `${responseText.substring(0, 100)}...${responseText.substring(responseText.length - 100)}`
+        : responseText || "NO TEXT";
       console.log(`📊 AI Response Details:`, {
-        textLength: result.text?.length || 0,
+        textLength: responseText.length,
         finishReason: result.finishReason,
         usage: result.usage,
         hasText: !!result.text,
-        textPreview: result.text?.substring(0, 100) || "NO TEXT",
+        textPreview: responsePreview,
       });
 
       if (!result.text || result.text.trim().length === 0) {

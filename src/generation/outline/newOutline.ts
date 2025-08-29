@@ -149,13 +149,19 @@ export const generateNewOutline = async (storyOutline: {
     structureFormula: selectedFormula,
     author_style: storyOutline.author_style,
   });
-  console.log(system);
+  const systemPreview = system.length > 200
+    ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
+    : system;
+  console.log(`System prompt: ${systemPreview}`);
   const prompt = getPrompt({
     user_prompt: storyOutline.user_prompt,
     story_length: storyOutline.story_length,
     user_tags: storyOutline.user_tags as string[],
   });
-  console.log(prompt);
+  const promptPreview = prompt.length > 200
+    ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
+    : prompt;
+  console.log(`User prompt: ${promptPreview}`);
 
   const MAX_RETRIES = 3;
   let lastError: Error | null = null;
