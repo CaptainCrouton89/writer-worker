@@ -17,7 +17,8 @@ const getRandomFormula = (): string => {
 const systemPrompt = (
   promptData: UserPrompt,
   storyOutline: string,
-  structureFormula: string
+  structureFormula: string,
+  writingQuirk?: string
 ) => `
 You are ${
   STYLE_GUIDELINES[promptData.style]
@@ -67,7 +68,12 @@ Write concise bullet points that are 2-3 sentences long. Each should:
 - Do not put too many story beats in a single chapter—otherwise the story will feel rushed.
 </bullet_point_style>
 
-<output_format>
+${writingQuirk ? `<writing_style_quirk>
+The author has a distinctive writing quirk: ${writingQuirk}
+Incorporate this stylistic element naturally throughout the narrative.
+</writing_style_quirk>
+
+` : ''}<output_format>
 Begin your response with: "Of course! Here is the list:"
 
 Then generate ONLY the chapters from Chapter ${
@@ -122,7 +128,8 @@ Write ONLY the remaining ${remainingChapterCount} chapters (Chapter ${startingCh
 export const regenerateOutline = async (
   userPrompt: string,
   promptData: UserPrompt,
-  existingChapters: Chapter[]
+  existingChapters: Chapter[],
+  writingQuirk?: string
 ): Promise<Chapter[]> => {
   // Get the insertion index from the prompt data
   const insertionIndex = promptData.insertion_chapter_index;
@@ -156,7 +163,7 @@ export const regenerateOutline = async (
     .join("\n");
 
   const selectedFormula = getRandomFormula();
-  const system = systemPrompt(promptData, fullOutlineString, selectedFormula);
+  const system = systemPrompt(promptData, fullOutlineString, selectedFormula, writingQuirk);
   const systemPreview = system.length > 200
     ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
     : system;

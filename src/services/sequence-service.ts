@@ -128,4 +128,28 @@ export class SequenceService {
   async updateEmbedding(sequenceId: string, embedding: string): Promise<void> {
     await this.updateSequence(sequenceId, { embedding });
   }
+
+  async updateWritingQuirk(sequenceId: string, writingQuirk: string): Promise<Tables<"sequences">> {
+    const { data, error } = await supabase
+      .from("sequences")
+      .update({ 
+        writing_quirk: writingQuirk,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", sequenceId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(
+        `Failed to update writing quirk for sequence ${sequenceId}: ${error.message}`
+      );
+    }
+
+    if (!data) {
+      throw new Error(`Sequence ${sequenceId} not found when updating writing quirk`);
+    }
+
+    return data;
+  }
 }

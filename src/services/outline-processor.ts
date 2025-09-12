@@ -1,6 +1,10 @@
 import { generateNewOutline } from "../generation/outline/newOutline.js";
 import { regenerateOutline } from "../generation/outline/regenerateOutline.js";
 import {
+  generateWritingQuirks,
+  selectRandomQuirk,
+} from "../generation/quirks/writingQuirks.js";
+import {
   Chapter,
   GenerationJob,
   Sequence,
@@ -8,8 +12,11 @@ import {
   StoryLength,
   UserPrompt,
 } from "../lib/types.js";
+import { SequenceService } from "./sequence-service.js";
 
 export class OutlineProcessor {
+  private sequenceService = new SequenceService();
+
   async processOutline(
     job: GenerationJob,
     sequence: Sequence,
@@ -35,7 +42,7 @@ export class OutlineProcessor {
 
     if (existingChapters.length === 0) {
       console.log(`🔮 No outline exists, generating new outline`);
-      const chapters = await this.generateNewOutline(currentPrompt);
+      const chapters = await this.generateNewOutline(currentPrompt, sequence.id);
       return {
         chapters,
         wasGenerated: true,
@@ -79,30 +86,52 @@ export class OutlineProcessor {
     );
   }
 
-  private async generateNewOutline(prompt: UserPrompt): Promise<Chapter[]> {
+  private async generateNewOutline(
+    prompt: UserPrompt,
+    sequenceId: string
+  ): Promise<Chapter[]> {
+    // Generate writing quirks for new outline
+    console.log(`🎨 Generating writing quirks...`);
+    const quirksResponse = await generateWritingQuirks(
+      prompt.style,
+      prompt.spice_level as SpiceLevel
+    );
+    
+    const selectedQuirk = selectRandomQuirk(quirksResponse.quirks);
+    console.log(`✨ Selected writing quirk: ${selectedQuirk}`);
+    
+    // Save the quirk to the sequence
+    await this.sequenceService.updateWritingQuirk(sequenceId, selectedQuirk);
+
     const chapters = await generateNewOutline({
       user_prompt: prompt.prompt,
       story_length: prompt.story_length as StoryLength,
       user_tags: prompt.tags,
       spice_level: prompt.spice_level as SpiceLevel,
       author_style: prompt.style,
+      writingQuirk: selectedQuirk,
     });
 
     return chapters;
   }
 
   private async regenerateExistingOutline(
-    job: GenerationJob,
+    _job: GenerationJob,
     sequence: Sequence,
     prompt: UserPrompt,
-    chapterIndex: number
+    _chapterIndex: number
   ): Promise<Chapter[]> {
     const existingChapters = this.getChapters(sequence);
+
+    // For regeneration, use the existing writing quirk if available
+    const existingQuirk = sequence.writing_quirk;
+    console.log(`🔄 Using existing writing quirk: ${existingQuirk ? existingQuirk : 'none'}`);
 
     const chapters = await regenerateOutline(
       prompt.prompt,
       prompt,
-      existingChapters
+      existingChapters,
+      existingQuirk || undefined
     );
 
     return chapters;

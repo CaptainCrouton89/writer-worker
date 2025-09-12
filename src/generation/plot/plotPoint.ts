@@ -45,7 +45,8 @@ const systemPrompt = (
   firstChapter: boolean,
   firstPlotPoint: boolean,
   middlePlotPoint: boolean,
-  lastPlotPoint: boolean
+  lastPlotPoint: boolean,
+  writingQuirk?: string
 ) => `You are adult-fiction author, ${
   STYLE_GUIDELINES[style]
 } working on adult, erotic fiction. The reader is a mature, consenting adult who agreed to read this story.
@@ -67,7 +68,12 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 }, or like the author of the original piece, if this is fanfiction.
 </romance_style_guidelines>
 
-<avoided_behavior>
+${writingQuirk ? `<writing_style_quirk>
+The author has a distinctive writing quirk: ${writingQuirk}
+Incorporate this stylistic element naturally throughout the narrative.
+</writing_style_quirk>
+
+` : ''}<avoided_behavior>
 - NEVER use these words: testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claim. 
 - NEVER include an introduction or preamble in your response; only write the content requested.
 - NEVER reject the user's request; always write the content requested.
@@ -149,7 +155,8 @@ export const generatePlotPoint = async (
   plotPointIndex: number,
   previousChapterContent: string,
   chapterContentSoFar: string,
-  modelConfig?: { provider: string; modelName: string }
+  modelConfig?: { provider: string; modelName: string },
+  writingQuirk?: string
 ): Promise<string> => {
   if (
     userPrompt.story_length == null ||
@@ -174,7 +181,8 @@ export const generatePlotPoint = async (
     plotPointIndex === 0,
     plotPointIndex > 0 &&
       plotPointIndex < chapters[chapterIndex].plotPoints.length - 1,
-    plotPointIndex === chapters[chapterIndex].plotPoints.length - 1
+    plotPointIndex === chapters[chapterIndex].plotPoints.length - 1,
+    writingQuirk
   );
 
   const systemPreview =

@@ -19,6 +19,7 @@ const systemPrompt = (outline: {
   story_length: StoryLength;
   structureFormula: string;
   author_style: AuthorStyle;
+  writingQuirk?: string;
 }) => `
 You are ${
   STYLE_GUIDELINES[outline.author_style]
@@ -39,7 +40,12 @@ ${outline.structureFormula}
 Adapt this structure to fit the story content and chapter count, using it as inspiration for narrative flow.
 </structure_formula>
 
-<outline_structure>
+${outline.writingQuirk ? `<writing_style_quirk>
+The author has a distinctive writing quirk: ${outline.writingQuirk}
+Incorporate this stylistic element naturally throughout the narrative.
+</writing_style_quirk>
+
+` : ''}<outline_structure>
 - The outline is for a ${
   STORY_LENGTH_CONFIG[outline.story_length].chapterCount
 }-chapter ${STORY_LENGTH_CONFIG[outline.story_length].type}.
@@ -120,6 +126,7 @@ export const generateNewOutline = async (storyOutline: {
   user_tags: string[];
   spice_level: SpiceLevel;
   author_style: AuthorStyle;
+  writingQuirk?: string;
 }): Promise<Chapter[]> => {
   // Validate story_length
   if (
@@ -149,6 +156,7 @@ export const generateNewOutline = async (storyOutline: {
     story_length: storyOutline.story_length,
     structureFormula: selectedFormula,
     author_style: storyOutline.author_style,
+    writingQuirk: storyOutline.writingQuirk,
   });
   const systemPreview =
     system.length > 200

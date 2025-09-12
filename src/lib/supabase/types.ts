@@ -105,6 +105,63 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          campaign: string | null
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          medium: string | null
+          name: string
+          notes: string | null
+          redirect_path: string | null
+          slug: string
+          source: string
+          term: string | null
+          total_clicks: number | null
+          total_conversions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          medium?: string | null
+          name: string
+          notes?: string | null
+          redirect_path?: string | null
+          slug: string
+          source: string
+          term?: string | null
+          total_clicks?: number | null
+          total_conversions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign?: string | null
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          medium?: string | null
+          name?: string
+          notes?: string | null
+          redirect_path?: string | null
+          slug?: string
+          source?: string
+          term?: string | null
+          total_clicks?: number | null
+          total_conversions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chapter_hearts: {
         Row: {
           chapter_id: string
@@ -1190,6 +1247,51 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount_cents: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          metadata: Json | null
+          status: string
+          stripe_invoice_id: string | null
+          stripe_payment_intent_id: string | null
+          tokens_granted: number | null
+          type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          status: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          tokens_granted?: number | null
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          tokens_granted?: number | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       project_runs: {
         Row: {
           created_at: string | null
@@ -1393,6 +1495,7 @@ export type Database = {
           trigger_warnings: string[]
           updated_at: string
           user_prompt_history: Json
+          writing_quirk: string | null
         }
         Insert: {
           chapters?: Json | null
@@ -1411,6 +1514,7 @@ export type Database = {
           trigger_warnings?: string[]
           updated_at?: string
           user_prompt_history?: Json
+          writing_quirk?: string | null
         }
         Update: {
           chapters?: Json | null
@@ -1429,6 +1533,40 @@ export type Database = {
           trigger_warnings?: string[]
           updated_at?: string
           user_prompt_history?: Json
+          writing_quirk?: string | null
+        }
+        Relationships: []
+      }
+      stripe_webhook_events: {
+        Row: {
+          created_at: string | null
+          error: string | null
+          id: string
+          payload: Json
+          processed: boolean | null
+          processed_at: string | null
+          stripe_event_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          payload: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          stripe_event_id: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          stripe_event_id?: string
+          type?: string
         }
         Relationships: []
       }
@@ -1521,6 +1659,7 @@ export type Database = {
       }
       traffic_sources: {
         Row: {
+          campaign_id: string | null
           converted_user_id: string | null
           created_at: string | null
           id: string
@@ -1529,6 +1668,7 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          campaign_id?: string | null
           converted_user_id?: string | null
           created_at?: string | null
           id?: string
@@ -1537,6 +1677,7 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          campaign_id?: string | null
           converted_user_id?: string | null
           created_at?: string | null
           id?: string
@@ -1544,7 +1685,15 @@ export type Database = {
           source?: string
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "traffic_sources_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       unsubscribe_tokens: {
         Row: {
@@ -1769,11 +1918,14 @@ export type Database = {
           current_period_end: string | null
           current_period_start: string | null
           id: string
+          last_token_grant: string | null
           metadata: Json | null
           payment_provider_customer_id: string | null
           payment_provider_subscription_id: string | null
           plan_id: string
           status: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
           trial_end: string | null
           trial_start: string | null
           updated_at: string | null
@@ -1786,11 +1938,14 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          last_token_grant?: string | null
           metadata?: Json | null
           payment_provider_customer_id?: string | null
           payment_provider_subscription_id?: string | null
           plan_id: string
           status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           trial_end?: string | null
           trial_start?: string | null
           updated_at?: string | null
@@ -1803,11 +1958,14 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          last_token_grant?: string | null
           metadata?: Json | null
           payment_provider_customer_id?: string | null
           payment_provider_subscription_id?: string | null
           plan_id?: string
           status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           trial_end?: string | null
           trial_start?: string | null
           updated_at?: string | null
@@ -1944,6 +2102,26 @@ export type Database = {
       claim_daily_reward: {
         Args: { p_user_id: string }
         Returns: Json
+      }
+      claim_pending_jobs: {
+        Args: { worker_count?: number }
+        Returns: {
+          chapter_id: string
+          completed_at: string
+          created_at: string
+          current_step: string
+          error_message: string
+          id: string
+          job_type: string
+          model_id: string
+          progress: number
+          quote_id: string
+          sequence_id: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
       }
       cleanup_expired_ghost_users: {
         Args: Record<PropertyKey, never>

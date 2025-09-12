@@ -345,7 +345,8 @@ export class JobProcessorV2 {
       latestPrompt,
       chapters,
       previousChapterContent,
-      modelConfig
+      modelConfig,
+      sequence.writing_quirk
     );
 
     console.log(
