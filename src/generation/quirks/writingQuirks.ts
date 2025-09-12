@@ -18,33 +18,71 @@ export type WritingQuirksResponse = z.infer<typeof WritingQuirksSchema>;
  */
 export const generateWritingQuirks = async (
   authorStyle: AuthorStyle,
-  spiceLevel: SpiceLevel
+  spiceLevel: SpiceLevel,
+  storyDescription: string
 ): Promise<WritingQuirksResponse> => {
-  const systemPrompt = `You are a creative writing specialist who understands various narrative techniques and stylistic quirks that make stories unique and engaging.
+  const systemPrompt = `You are an expert creative writing specialist and narrative technique architect specializing in crafting unique stylistic elements that elevate storytelling. You have deep knowledge of literary devices, narrative structures, and innovative writing techniques across all genres.
 
-Your task is to generate exactly 4 creative writing quirks that would enhance a story's narrative style. Each quirk should be formatted as "Title - Description" where:
-- Title: A concise name for the writing technique
-- Description: A brief explanation of how it's used (1-2 sentences maximum)
+<context>
+Author Style: ${authorStyle}
+Spice Level: ${spiceLevel}
+</context>
 
-Consider the author style (${authorStyle}) and spice level (${spiceLevel}) when selecting appropriate quirks.
+Your expertise enables you to identify and create distinctive writing quirks that:
+- Enhance reader engagement through unexpected narrative techniques
+- Create memorable stylistic signatures that define a story's voice
+- Balance creativity with readability for optimal storytelling impact
+- Adapt to different genres, tones, and thematic requirements
 
-Examples of good writing quirks:
-- "Occasional Flashbacks - 2-3 sentence memories in italics"
-- "Stream of Consciousness - Internal monologues revealing thoughts"
-- "Epistolary Elements - Letters or diary entries in narrative"
-- "Multiple POVs - Alternating character perspectives"
-- "Breaking Fourth Wall - Direct reader addresses"
-- "Repetitive Motifs - Recurring phrases with evolving meaning"
-- "Fragmented Sentences - Short punchy sentences for intensity"
-- "Non-linear Timeline - Time jumps and parallel narratives"
+You understand that effective writing quirks serve specific narrative purposes: they deepen characterization, control pacing, enhance atmosphere, or provide structural innovation. Each quirk should feel intentional and integrated rather than gimmicky.`;
 
-Be creative and come up with fresh, interesting techniques that would add depth and personality to storytelling.`;
+  const prompt = `<story_context>
+${storyDescription}
+</story_context>
 
-  const prompt = `Generate 4 unique and creative writing quirks that would enhance narrative storytelling. Consider author style ${authorStyle} and spice level ${spiceLevel}.
+<task>
+Generate exactly 4 creative and purposeful writing quirks for the story described above. These quirks should enhance the narrative's unique voice and complement its themes, setting, and characters.
 
-Each quirk should follow the format: "Title - Description"
+<format_requirements>
+Each quirk must follow this exact format:
+"[Technique Name] - [Specific implementation description]"
 
-Make them diverse and interesting - mix different types of narrative techniques like dialogue quirks, structural elements, stylistic choices, and formatting techniques.`;
+Requirements for each quirk:
+- Technique Name: A memorable, concise label (2-4 words)
+- Implementation: A concrete description of how it appears in the text (1-2 sentences, be specific about execution)
+</format_requirements>
+
+<quirk_categories>
+Select from diverse categories to create variety:
+1. Structural Elements (timeline manipulation, chapter formats, narrative framing)
+2. Voice Techniques (POV shifts, narrative distance, unreliable narration)
+3. Stylistic Choices (sentence patterns, rhythm variations, linguistic quirks)
+4. Sensory/Atmospheric (sensory focus, mood techniques, environmental integration)
+5. Character-Driven (internal dialogue styles, thought representation, perspective filters)
+6. Meta-Textual (reader interaction, genre awareness, narrative commentary)
+</quirk_categories>
+
+<quality_criteria>
+Each quirk should:
+- Feel organic to THIS specific story's needs
+- Serve a clear narrative purpose beyond mere decoration
+- Be implementable consistently throughout the narrative
+- Enhance rather than distract from the story's core elements
+- Work harmoniously with the other selected quirks
+</quality_criteria>
+
+<examples>
+Strong quirks for reference (create NEW ones, don't copy these):
+- "Sensory Memory Triggers - Key moments introduced through specific scents or textures that transport characters"
+- "Countdown Chapters - Each chapter title shows time remaining until a pivotal event"
+- "Dialogue Echo Patterns - Important phrases subtly repeat across different conversations with evolving meanings"
+- "Environmental Mirrors - Weather and settings reflect internal emotional states without explicit connection"
+- "Nested Perspectives - Stories within stories that parallel the main narrative"
+- "Linguistic Evolution - Character speech patterns gradually change to reflect their development"
+</examples>
+
+Generate 4 innovative writing quirks that will make this story distinctive and memorable. Focus on techniques that specifically enhance THIS story's unique elements rather than generic stylistic choices.
+</task>`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");

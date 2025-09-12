@@ -3,6 +3,8 @@ import { Sequence, Chapter, UserPrompt, AuthorStyle, SpiceLevel, StoryLength } f
 import { generateNewOutline } from "../generation/outline/newOutline.js";
 import { generatePlotPoint } from "../generation/plot/plotPoint.js";
 import { STORY_LENGTH_CONFIG } from "../lib/constants/generation.js";
+import { generateWritingQuirks } from "../generation/quirks/writingQuirks.js";
+import { generateSequenceMetadata } from "../generation/metadata/metadata.js";
 
 export interface TestOutlineParams {
   user_prompt: string;
@@ -29,7 +31,76 @@ export interface SequenceListItem {
   chapterCount: number;
 }
 
+export interface MetadataGenerationResult {
+  title: string;
+  description: string;
+  tags: string[];
+  trigger_warnings: string[];
+  is_sexually_explicit: boolean;
+  target_audience: string[];
+}
+
+export interface WritingQuirksResult {
+  quirks: string[];
+}
+
 export class TestGenerationService {
+  /**
+   * Generate writing quirks for testing
+   */
+  async generateTestWritingQuirks(
+    authorStyle: AuthorStyle,
+    spiceLevel: SpiceLevel
+  ): Promise<TestGenerationResult<WritingQuirksResult>> {
+    try {
+      console.log("🎨 Generating test writing quirks with params:", {
+        authorStyle,
+        spiceLevel
+      });
+
+      const result = await generateWritingQuirks(authorStyle, spiceLevel, "A test story about love and adventure");
+
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      console.error("❌ Test quirks generation failed:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  /**
+   * Generate complete metadata from an outline
+   */
+  async generateTestMetadata(
+    outline: string,
+    storyLength: StoryLength = 0
+  ): Promise<TestGenerationResult<MetadataGenerationResult>> {
+    try {
+      console.log("📋 Generating test metadata with params:", {
+        outlineLength: outline.length,
+        storyLength
+      });
+
+      const metadata = await generateSequenceMetadata(outline, storyLength);
+
+      return {
+        success: true,
+        data: metadata
+      };
+    } catch (error) {
+      console.error("❌ Test metadata generation failed:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
   /**
    * Generate a test outline without creating any database records
    */

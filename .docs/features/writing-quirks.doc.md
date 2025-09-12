@@ -1,7 +1,7 @@
 # Writing Quirks
 
 ## Overview
-Generates unique stylistic writing elements for each story sequence to enhance narrative personality and distinguish stories with distinctive narrative techniques.
+Generates unique stylistic writing elements for each story sequence to enhance narrative personality and distinguish stories with distinctive narrative techniques. The quirks are contextually generated based on the story description, author style, and spice level to ensure they complement the narrative's themes and setting.
 
 ## User Perspective
 Users receive stories with automatically-applied unique writing quirks like "Occasional Flashbacks - 2-3 sentence memories in italics" or "Stream of Consciousness - Internal monologues revealing thoughts". These quirks are consistently applied throughout the entire story, creating a distinctive narrative voice that persists across all chapters and plot points.
@@ -9,7 +9,10 @@ Users receive stories with automatically-applied unique writing quirks like "Occ
 ## Data Flow
 1. User initiates story generation through the job system
 2. OutlineProcessor detects new story and triggers writing quirk generation
-3. OpenRouter Gemini 2.5 Pro generates 4 unique quirk options using author style and spice level context
+3. OpenRouter Gemini 2.5 Pro generates 4 unique quirk options using:
+   - Story description from the user prompt
+   - Author style preference
+   - Spice level setting
 4. System randomly selects one quirk from the 4 options
 5. Selected quirk is saved to the sequences table in the `writing_quirk` column
 6. Quirk is passed through the entire generation pipeline:
@@ -42,10 +45,11 @@ Users receive stories with automatically-applied unique writing quirks like "Occ
 
 ## Usage Example
 ```typescript
-// Generate quirks based on author style and spice level
+// Generate quirks based on story context, author style, and spice level
 const quirksResponse = await generateWritingQuirks(
-  "romantic", // author style
-  "mild"      // spice level
+  "romantic",  // author style
+  "mild",      // spice level  
+  "A forbidden romance between a witch and a demon hunter in Victorian London" // story description
 );
 
 // Randomly select one from the 4 generated options

@@ -242,17 +242,9 @@
                         <label for="apiBaseUrl">API Base URL:</label>
                         <input type="text" id="apiBaseUrl" placeholder="http://localhost:3951" value="http://localhost:3951">
                     </div>
-                    <div class="form-group" style="display: none;">
-                        <label for="supabaseUrl">Supabase URL:</label>
-                        <input type="text" id="supabaseUrl" value="https://alqbsbrapawaewqwfggj.supabase.co">
-                    </div>
-                    <div class="form-group" style="display: none;">
-                        <label for="supabaseKey">Supabase Anon Key:</label>
-                        <input type="password" id="supabaseKey" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFscWJzYnJhcGF3YWV3cXdmZ2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzNzI2OTIsImV4cCI6MjA2NTk0ODY5Mn0.rU3B-0PGk7eCFK5nRoPJ9arLZ5V3jv8Xvbr3tdfGnu4">
-                    </div>
                 </div>
                 <div style="color: #888; font-size: 0.9em; margin-top: 8px;">
-                    ✓ Using Supabase connection from environment
+                    ✓ All database operations handled through server API
                 </div>
             </div>
         </div>
@@ -312,6 +304,7 @@
                 </div>
 
                 <button type="submit">Generate Outline</button>
+                <button type="button" id="generateMetadataFromOutlineBtn" style="margin-left: 10px; display: none;">Generate Metadata from Outline</button>
             </form>
 
             <div class="loading" id="outlineLoading">
@@ -320,6 +313,102 @@
             </div>
 
             <div class="results hidden" id="outlineResults"></div>
+            <div class="results hidden" id="outlineMetadataResults" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Metadata Generation Section -->
+        <div class="section">
+            <h2>Metadata Generation Testing</h2>
+            
+            <!-- Writing Quirks Generation -->
+            <div class="subsection" style="margin-bottom: 30px;">
+                <h3 style="color: #fbbf24; margin-bottom: 15px;">Writing Quirks Generation</h3>
+                <form id="quirksForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quirksAuthorStyle">Author Style:</label>
+                            <select id="quirksAuthorStyle" required>
+                                <option value="0">0 - Nicholas Sparks</option>
+                                <option value="1" selected>1 - Stephanie Meyer</option>
+                                <option value="2">2 - Colleen Hoover</option>
+                                <option value="3">3 - Sally Rooney</option>
+                                <option value="4">4 - Jane Austen</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="quirksSpiceLevel">Spice Level:</label>
+                            <select id="quirksSpiceLevel" required>
+                                <option value="0">0 - Sweet Romance</option>
+                                <option value="1" selected>1 - Moderate Heat</option>
+                                <option value="2">2 - Explicit</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit">Generate Writing Quirks</button>
+                </form>
+                
+                <div class="loading" id="quirksLoading">
+                    <div class="spinner"></div>
+                    <span>Generating quirks...</span>
+                </div>
+                
+                <div class="results hidden" id="quirksResults"></div>
+            </div>
+            
+            <!-- Full Metadata Generation -->
+            <div class="subsection" style="margin-bottom: 30px;">
+                <h3 style="color: #fbbf24; margin-bottom: 15px;">Full Metadata Generation</h3>
+                <form id="metadataForm">
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="metadataOutline">Story Outline (JSON or text):</label>
+                            <textarea id="metadataOutline" placeholder="Paste your story outline here..." required style="min-height: 200px;"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="metadataStoryLength">Story Length:</label>
+                            <select id="metadataStoryLength" required>
+                                <option value="0">0 - Short Story</option>
+                                <option value="1" selected>1 - Novella</option>
+                                <option value="2">2 - Novel</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit">Generate Full Metadata</button>
+                </form>
+                
+                <div class="loading" id="metadataLoading">
+                    <div class="spinner"></div>
+                    <span>Generating metadata...</span>
+                </div>
+                
+                <div class="results hidden" id="metadataResults"></div>
+            </div>
+            
+            <!-- Individual Component Generation -->
+            <div class="subsection">
+                <h3 style="color: #fbbf24; margin-bottom: 15px;">Individual Component Testing</h3>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="componentOutline">Story Outline for Component Testing:</label>
+                        <textarea id="componentOutline" placeholder="Paste your story outline here..." style="min-height: 150px;"></textarea>
+                    </div>
+                </div>
+                <div class="form-row" style="gap: 10px; flex-wrap: wrap;">
+                    <button type="button" id="generateTitleDescBtn">Generate Title & Description</button>
+                    <button type="button" id="generateTagsBtn">Generate Tags</button>
+                    <button type="button" id="generateWarningsBtn">Generate Trigger Warnings</button>
+                    <button type="button" id="generateAudienceBtn">Generate Target Audience</button>
+                </div>
+                
+                <div class="loading" id="componentLoading">
+                    <div class="spinner"></div>
+                    <span>Generating component...</span>
+                </div>
+                
+                <div class="results hidden" id="componentResults"></div>
+            </div>
         </div>
 
         <!-- Plot Point Generation Section -->
@@ -373,342 +462,7 @@
         </div>
     </div>
 
-    <script>
-        // Global state
-        let supabaseClient = null;
-        let currentSequences = [];
-        let selectedSequence = null;
-
-        // Initialize Supabase client
-        function initSupabase() {
-            const url = document.getElementById('supabaseUrl').value;
-            const key = document.getElementById('supabaseKey').value;
-            
-            if (!url || !key) {
-                showError('Please provide Supabase URL and key');
-                return false;
-            }
-
-            try {
-                // Use Supabase client from CDN
-                if (typeof supabase === 'undefined') {
-                    showError('Supabase client not loaded. Please add Supabase CDN script to the HTML head.');
-                    return false;
-                }
-                
-                supabaseClient = supabase.createClient(url, key);
-                return true;
-            } catch (error) {
-                showError('Failed to initialize Supabase: ' + error.message);
-                return false;
-            }
-        }
-
-        // Utility functions
-        function showLoading(elementId) {
-            document.getElementById(elementId).style.display = 'flex';
-        }
-
-        function hideLoading(elementId) {
-            document.getElementById(elementId).style.display = 'none';
-        }
-
-        function showResults(elementId, content, isError = false) {
-            const element = document.getElementById(elementId);
-            element.textContent = content;
-            element.className = `results ${isError ? 'error' : 'success'}`;
-            element.classList.remove('hidden');
-        }
-
-        function showError(message) {
-            alert('Error: ' + message);
-        }
-
-        // API call functions
-        async function makeApiCall(endpoint, method = 'GET', data = null) {
-            const baseUrl = document.getElementById('apiBaseUrl').value;
-            if (!baseUrl) {
-                throw new Error('API Base URL is required');
-            }
-            
-            const url = `${baseUrl}${endpoint}`;
-            
-            const options = {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            };
-
-            if (data) {
-                options.body = JSON.stringify(data);
-            }
-
-            const response = await fetch(url, options);
-            const result = await response.json();
-            
-            if (!response.ok) {
-                if (result.error) {
-                    throw new Error(result.error);
-                }
-                throw new Error(`API call failed with status: ${response.status}`);
-            }
-            
-            return result;
-        }
-
-        // Load sequences from database
-        async function loadSequences() {
-            if (!initSupabase()) return;
-
-            try {
-                showLoading('plotPointLoading');
-                
-                const { data, error } = await supabaseClient
-                    .from('sequences')
-                    .select('id, name, description, chapters')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-
-                if (error) throw error;
-
-                currentSequences = data || [];
-                populateSequenceSelect();
-                
-            } catch (error) {
-                showError('Failed to load sequences: ' + error.message);
-            } finally {
-                hideLoading('plotPointLoading');
-            }
-        }
-
-        function populateSequenceSelect() {
-            const select = document.getElementById('sequenceSelect');
-            select.innerHTML = '<option value="">Select a sequence...</option>';
-            
-            currentSequences.forEach(sequence => {
-                const option = document.createElement('option');
-                option.value = sequence.id;
-                option.textContent = `${sequence.name}${sequence.description ? ' - ' + sequence.description.substring(0, 50) + '...' : ''}`;
-                select.appendChild(option);
-            });
-        }
-
-        // Handle sequence selection
-        function handleSequenceChange() {
-            const sequenceId = document.getElementById('sequenceSelect').value;
-            selectedSequence = currentSequences.find(s => s.id === sequenceId);
-            
-            if (selectedSequence) {
-                displaySequenceOutline();
-                populateChapterSelect();
-                document.getElementById('chapterSelect').disabled = false;
-            } else {
-                document.getElementById('sequenceOutline').textContent = 'Select a sequence to view its outline...';
-                document.getElementById('chapterSelect').disabled = true;
-                document.getElementById('plotPointSelect').disabled = true;
-                document.getElementById('generatePlotPointBtn').disabled = true;
-            }
-        }
-
-        function displaySequenceOutline() {
-            if (!selectedSequence || !selectedSequence.chapters) {
-                document.getElementById('sequenceOutline').textContent = 'No outline available for this sequence.';
-                return;
-            }
-
-            let outline = '';
-            try {
-                const chapters = Array.isArray(selectedSequence.chapters) ? selectedSequence.chapters : [];
-                
-                chapters.forEach((chapter, index) => {
-                    const chapterName = chapter.name ? chapter.name : 'Untitled';
-                    outline += `<div class="chapter-title">Chapter ${index + 1}: ${chapterName}</div>\n`;
-                    if (chapter.plotPoints && Array.isArray(chapter.plotPoints)) {
-                        chapter.plotPoints.forEach(plotPoint => {
-                            outline += `<div class="plot-point">- ${plotPoint}</div>\n`;
-                        });
-                    }
-                    outline += '\n';
-                });
-                
-                if (outline) {
-                    document.getElementById('sequenceOutline').innerHTML = outline;
-                } else {
-                    document.getElementById('sequenceOutline').textContent = 'No chapters found.';
-                }
-            } catch (error) {
-                document.getElementById('sequenceOutline').textContent = 'Error displaying outline: ' + error.message;
-            }
-        }
-
-        function populateChapterSelect() {
-            const select = document.getElementById('chapterSelect');
-            select.innerHTML = '<option value="">Select a chapter...</option>';
-            
-            if (selectedSequence && selectedSequence.chapters) {
-                try {
-                    const chapters = Array.isArray(selectedSequence.chapters) ? selectedSequence.chapters : [];
-                    chapters.forEach((chapter, index) => {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        const chapterName = chapter.name ? chapter.name : 'Untitled';
-                        option.textContent = `Chapter ${index + 1}: ${chapterName}`;
-                        select.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('Error populating chapters:', error);
-                }
-            }
-        }
-
-        function handleChapterChange() {
-            const chapterIndex = document.getElementById('chapterSelect').value;
-            
-            if (chapterIndex !== '' && selectedSequence && selectedSequence.chapters) {
-                populatePlotPointSelect(parseInt(chapterIndex));
-                document.getElementById('plotPointSelect').disabled = false;
-                document.getElementById('generatePlotPointBtn').disabled = false;
-            } else {
-                document.getElementById('plotPointSelect').disabled = true;
-                document.getElementById('generatePlotPointBtn').disabled = true;
-            }
-        }
-
-        function populatePlotPointSelect(chapterIndex) {
-            const select = document.getElementById('plotPointSelect');
-            select.innerHTML = '<option value="full">Generate Full Chapter</option>';
-            
-            try {
-                const chapter = selectedSequence.chapters[chapterIndex];
-                if (chapter && chapter.plotPoints && Array.isArray(chapter.plotPoints)) {
-                    chapter.plotPoints.forEach((plotPoint, index) => {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = `Plot Point ${index + 1}: ${plotPoint.substring(0, 50)}${plotPoint.length > 50 ? '...' : ''}`;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error populating plot points:', error);
-            }
-        }
-
-        // Handle outline form submission
-        document.getElementById('outlineForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                user_prompt: document.getElementById('userPrompt').value,
-                user_tags: document.getElementById('tags').value.split(',').map(tag => tag.trim()).filter(tag => tag),
-                spice_level: parseInt(document.getElementById('spiceLevel').value),
-                story_length: parseInt(document.getElementById('storyLength').value),
-                author_style: parseInt(document.getElementById('authorStyle').value),
-                writingQuirk: document.getElementById('writingQuirk').value.trim() || null
-            };
-
-            try {
-                showLoading('outlineLoading');
-                document.querySelector('#outlineForm button').disabled = true;
-                
-                // Call the outline generation endpoint (this would need to be added to the server)
-                const response = await fetch('/api/generate-outline', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                showResults('outlineResults', JSON.stringify(result, null, 2));
-
-            } catch (error) {
-                showResults('outlineResults', `Error: ${error.message}`, true);
-            } finally {
-                hideLoading('outlineLoading');
-                document.querySelector('#outlineForm button').disabled = false;
-            }
-        });
-
-        // Handle plot point form submission
-        document.getElementById('plotPointForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!selectedSequence) {
-                showError('Please select a sequence first');
-                return;
-            }
-
-            const chapterIndex = parseInt(document.getElementById('chapterSelect').value);
-            const plotPointIndex = document.getElementById('plotPointSelect').value;
-            
-            if (isNaN(chapterIndex)) {
-                showError('Please select a chapter');
-                return;
-            }
-
-            const formData = {
-                sequence_id: selectedSequence.id,
-                chapter_index: chapterIndex,
-                plot_point_index: plotPointIndex === 'full' ? 'full' : parseInt(plotPointIndex)
-            };
-
-            try {
-                showLoading('plotPointLoading');
-                document.getElementById('generatePlotPointBtn').disabled = true;
-                
-                // Call the plot point generation endpoint (this would need to be added to the server)
-                const response = await fetch('/api/generate-plot-point', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                showResults('plotPointResults', JSON.stringify(result, null, 2));
-
-            } catch (error) {
-                showResults('plotPointResults', `Error: ${error.message}`, true);
-            } finally {
-                hideLoading('plotPointLoading');
-                document.getElementById('generatePlotPointBtn').disabled = false;
-            }
-        });
-
-        // Event listeners
-        document.getElementById('loadSequences').addEventListener('click', loadSequences);
-        document.getElementById('sequenceSelect').addEventListener('change', handleSequenceChange);
-        document.getElementById('chapterSelect').addEventListener('change', handleChapterChange);
-
-        // Initialize the interface
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set default values
-            const apiBaseUrlInput = document.getElementById('apiBaseUrl');
-            if (!apiBaseUrlInput.value) {
-                apiBaseUrlInput.value = 'http://localhost:3951';
-            }
-            
-            // Load sequences on page load if Supabase config is provided
-            const supabaseUrl = document.getElementById('supabaseUrl').value;
-            const supabaseKey = document.getElementById('supabaseKey').value;
-            if (supabaseUrl && supabaseKey) {
-                loadSequences();
-            }
-        });
-    </script>
-
-    <!-- Add Supabase CDN for client-side operations -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- External JavaScript file to comply with CSP -->
+    <script src="/test/js/interface.js"></script>
 </body>
 </html>

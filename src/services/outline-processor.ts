@@ -94,7 +94,8 @@ export class OutlineProcessor {
     console.log(`🎨 Generating writing quirks...`);
     const quirksResponse = await generateWritingQuirks(
       prompt.style,
-      prompt.spice_level as SpiceLevel
+      prompt.spice_level as SpiceLevel,
+      prompt.prompt
     );
     
     const selectedQuirk = selectRandomQuirk(quirksResponse.quirks);

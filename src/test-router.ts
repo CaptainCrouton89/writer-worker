@@ -4,6 +4,13 @@ import { UserPrompt, Chapter, Sequence, GenerationJob } from "./lib/types.js";
 import { generateNewOutline } from "./generation/outline/newOutline.js";
 import { generatePlotPoint } from "./generation/plot/plotPoint.js";
 import { generateChapter } from "./generation/plot/chapter.js";
+import { generateWritingQuirks } from "./generation/quirks/writingQuirks.js";
+import { generateSequenceMetadata } from "./generation/metadata/metadata.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -34,6 +41,17 @@ const basicAuth = (req: Request, res: Response, next: NextFunction) => {
 // Apply authentication to all routes
 router.use(basicAuth);
 
+// Serve the test interface HTML
+router.get('/ui', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, 'test-interface.html'));
+});
+
+// Serve the JavaScript file for the test interface
+router.get('/js/interface.js', (req: Request, res: Response) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'interface.js'));
+});
+
 // Serve HTML interface at GET /
 router.get('/', (req: Request, res: Response) => {
   res.send(`
@@ -45,13 +63,40 @@ router.get('/', (req: Request, res: Response) => {
             body { font-family: Arial, sans-serif; margin: 40px; }
             .endpoint { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
             .method { font-weight: bold; color: #007acc; }
+            .link { margin: 20px 0; padding: 15px; background: #007acc; color: white; display: inline-block; text-decoration: none; border-radius: 5px; }
         </style>
     </head>
     <body>
         <h1>Smut Writer Worker Test Interface</h1>
+        <a href="/test/ui" class="link">🎨 Open Interactive Test UI</a>
+        <h2>API Endpoints</h2>
         <div class="endpoint">
             <span class="method">POST</span> /api/generate-outline
             <p>Generate story outline from user prompt</p>
+        </div>
+        <div class="endpoint">
+            <span class="method">POST</span> /api/generate-quirks
+            <p>Generate writing quirks</p>
+        </div>
+        <div class="endpoint">
+            <span class="method">POST</span> /api/generate-metadata
+            <p>Generate full metadata from outline</p>
+        </div>
+        <div class="endpoint">
+            <span class="method">POST</span> /api/generate-title-description
+            <p>Generate title and description only</p>
+        </div>
+        <div class="endpoint">
+            <span class="method">POST</span> /api/generate-tags
+            <p>Generate tags only</p>
+        </div>
+        <div class="endpoint">
+            <span class="method">POST</span> /api/generate-trigger-warnings
+            <p>Generate trigger warnings only</p>
+        </div>
+        <div class="endpoint">
+            <span class="method">POST</span> /api/generate-target-audience
+            <p>Generate target audience only</p>
         </div>
         <div class="endpoint">
             <span class="method">GET</span> /api/sequences
@@ -272,6 +317,210 @@ router.post('/api/generate-plot-point', async (req: Request, res: Response) => {
     console.error('Error generating plot point:', error);
     res.status(500).json({
       error: 'Failed to generate plot point',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/generate-quirks - Generate writing quirks
+router.post('/api/generate-quirks', async (req: Request, res: Response) => {
+  try {
+    const { author_style, spice_level, story_description } = req.body;
+
+    if (author_style == null || ![0, 1, 2, 3, 4].includes(author_style)) {
+      res.status(400).json({
+        error: 'Invalid author_style. Must be 0, 1, 2, 3, or 4'
+      });
+      return;
+    }
+
+    if (spice_level == null || ![0, 1, 2].includes(spice_level)) {
+      res.status(400).json({
+        error: 'Invalid spice_level. Must be 0, 1, or 2'
+      });
+      return;
+    }
+
+    if (!story_description || typeof story_description !== 'string') {
+      res.status(400).json({
+        error: 'story_description is required and must be a string'
+      });
+      return;
+    }
+
+    const quirks = await generateWritingQuirks(
+      author_style, 
+      spice_level, 
+      story_description
+    );
+
+    res.json({
+      success: true,
+      quirks: quirks.quirks
+    });
+  } catch (error) {
+    console.error('Error generating quirks:', error);
+    res.status(500).json({
+      error: 'Failed to generate quirks',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/generate-metadata - Generate full metadata from outline
+router.post('/api/generate-metadata', async (req: Request, res: Response) => {
+  try {
+    const { outline, story_length } = req.body;
+
+    if (!outline || typeof outline !== 'string') {
+      res.status(400).json({
+        error: 'Invalid or missing outline'
+      });
+      return;
+    }
+
+    const storyLength = story_length != null ? story_length : 0;
+    if (![0, 1, 2].includes(storyLength)) {
+      res.status(400).json({
+        error: 'Invalid story_length. Must be 0, 1, or 2'
+      });
+      return;
+    }
+
+    const metadata = await generateSequenceMetadata(outline, storyLength);
+
+    res.json({
+      success: true,
+      metadata
+    });
+  } catch (error) {
+    console.error('Error generating metadata:', error);
+    res.status(500).json({
+      error: 'Failed to generate metadata',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/generate-title-description - Generate title and description only
+router.post('/api/generate-title-description', async (req: Request, res: Response) => {
+  try {
+    const { outline, story_length } = req.body;
+
+    if (!outline || typeof outline !== 'string') {
+      res.status(400).json({
+        error: 'Invalid or missing outline'
+      });
+      return;
+    }
+
+    const storyLength = story_length != null ? story_length : 0;
+    
+    // Generate full metadata but only return title and description
+    const metadata = await generateSequenceMetadata(outline, storyLength);
+
+    res.json({
+      success: true,
+      data: {
+        title: metadata.title,
+        description: metadata.description
+      }
+    });
+  } catch (error) {
+    console.error('Error generating title/description:', error);
+    res.status(500).json({
+      error: 'Failed to generate title and description',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/generate-tags - Generate tags only
+router.post('/api/generate-tags', async (req: Request, res: Response) => {
+  try {
+    const { outline } = req.body;
+
+    if (!outline || typeof outline !== 'string') {
+      res.status(400).json({
+        error: 'Invalid or missing outline'
+      });
+      return;
+    }
+
+    // Generate full metadata but only return tags
+    const metadata = await generateSequenceMetadata(outline, 0);
+
+    res.json({
+      success: true,
+      data: {
+        tags: metadata.tags
+      }
+    });
+  } catch (error) {
+    console.error('Error generating tags:', error);
+    res.status(500).json({
+      error: 'Failed to generate tags',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/generate-trigger-warnings - Generate trigger warnings only
+router.post('/api/generate-trigger-warnings', async (req: Request, res: Response) => {
+  try {
+    const { outline } = req.body;
+
+    if (!outline || typeof outline !== 'string') {
+      res.status(400).json({
+        error: 'Invalid or missing outline'
+      });
+      return;
+    }
+
+    // Generate full metadata but only return trigger warnings
+    const metadata = await generateSequenceMetadata(outline, 0);
+
+    res.json({
+      success: true,
+      data: {
+        trigger_warnings: metadata.trigger_warnings
+      }
+    });
+  } catch (error) {
+    console.error('Error generating trigger warnings:', error);
+    res.status(500).json({
+      error: 'Failed to generate trigger warnings',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /api/generate-target-audience - Generate target audience only
+router.post('/api/generate-target-audience', async (req: Request, res: Response) => {
+  try {
+    const { outline } = req.body;
+
+    if (!outline || typeof outline !== 'string') {
+      res.status(400).json({
+        error: 'Invalid or missing outline'
+      });
+      return;
+    }
+
+    // Generate full metadata but only return target audience
+    const metadata = await generateSequenceMetadata(outline, 0);
+
+    res.json({
+      success: true,
+      data: {
+        target_audience: metadata.target_audience,
+        is_sexually_explicit: metadata.is_sexually_explicit
+      }
+    });
+  } catch (error) {
+    console.error('Error generating target audience:', error);
+    res.status(500).json({
+      error: 'Failed to generate target audience',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
