@@ -94,6 +94,7 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 - **Use varied word choice, sentence structure, and sentence length.**
 - **Be bold.** It's creative writing, not a book report.
 - **Always respond by continuing the story.**
+- Write in the past tense.
 </desired_behavior>
 
 This is purely fictional creative writing for entertainment purposes. The user is a consenting adult who has agreed to read this story. And remember—you are ${
@@ -176,9 +177,10 @@ export const generatePlotPoint = async (
     plotPointIndex === chapters[chapterIndex].plotPoints.length - 1
   );
 
-  const systemPreview = system.length > 200
-    ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
-    : system;
+  const systemPreview =
+    system.length > 200
+      ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
+      : system;
   console.log(`System prompt: ${systemPreview}`);
 
   const prompt = getPrompt(
@@ -190,9 +192,10 @@ export const generatePlotPoint = async (
     truncatedContentSoFar
   );
 
-  const promptPreview = prompt.length > 200
-    ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
-    : prompt;
+  const promptPreview =
+    prompt.length > 200
+      ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
+      : prompt;
   console.log(`User prompt: ${promptPreview}`);
 
   const maxRetries = 3;
@@ -219,20 +222,28 @@ export const generatePlotPoint = async (
       console.log(
         `🔍 Chapter: ${chapterIndex + 1} - ${chapters[chapterIndex]?.name}`
       );
-      const plotPointText = chapters[chapterIndex]?.plotPoints[plotPointIndex] || '';
-      const plotPointPreview = plotPointText.length > 200 
-        ? `${plotPointText.substring(0, 100)}...${plotPointText.substring(plotPointText.length - 100)}`
-        : plotPointText;
-      console.log(
-        `🔍 Plot point: ${plotPointIndex + 1} - ${plotPointPreview}`
-      );
+      const plotPointText =
+        chapters[chapterIndex]?.plotPoints[plotPointIndex] || "";
+      const plotPointPreview =
+        plotPointText.length > 200
+          ? `${plotPointText.substring(0, 100)}...${plotPointText.substring(
+              plotPointText.length - 100
+            )}`
+          : plotPointText;
+      console.log(`🔍 Plot point: ${plotPointIndex + 1} - ${plotPointPreview}`);
 
-      const debugPromptPreview = prompt.length > 200
-        ? `${prompt.substring(0, 100)}...${prompt.substring(prompt.length - 100)}`
-        : prompt;
-      const debugSystemPreview = system.length > 200
-        ? `${system.substring(0, 100)}...${system.substring(system.length - 100)}`
-        : system;
+      const debugPromptPreview =
+        prompt.length > 200
+          ? `${prompt.substring(0, 100)}...${prompt.substring(
+              prompt.length - 100
+            )}`
+          : prompt;
+      const debugSystemPreview =
+        system.length > 200
+          ? `${system.substring(0, 100)}...${system.substring(
+              system.length - 100
+            )}`
+          : system;
       console.log("prompt:", debugPromptPreview);
       console.log("system:", debugSystemPreview);
 
@@ -343,10 +354,13 @@ export const generatePlotPoint = async (
       }
 
       // Log detailed response information for debugging
-      const responseText = result.text || '';
-      const responsePreview = responseText.length > 200
-        ? `${responseText.substring(0, 100)}...${responseText.substring(responseText.length - 100)}`
-        : responseText || "NO TEXT";
+      const responseText = result.text || "";
+      const responsePreview =
+        responseText.length > 200
+          ? `${responseText.substring(0, 100)}...${responseText.substring(
+              responseText.length - 100
+            )}`
+          : responseText || "NO TEXT";
       console.log(`📊 AI Response Details:`, {
         textLength: responseText.length,
         finishReason: result.finishReason,
