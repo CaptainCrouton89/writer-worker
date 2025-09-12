@@ -7,6 +7,8 @@ import { JobRetryService, RetryJobRequest } from "./services/job-retry-service.j
 
 // Import cleanupOrphanedChapters function
 import { cleanupOrphanedChapters } from "./worker.js";
+// Import test router
+import testRouter from "./test-router.js";
 
 const app = express();
 const PORT = process.env.PORT || 3951;
@@ -51,6 +53,9 @@ app.get("/health", async (req, res) => {
   }
 });
 
+// Mount test router at /test
+app.use("/test", testRouter);
+
 // Basic info endpoint
 app.get("/", (req, res) => {
   res.json({
@@ -62,6 +67,7 @@ app.get("/", (req, res) => {
       metrics: "/metrics",
       retry: "POST /jobs/retry",
       cleanup: "POST /cleanup/orphaned-chapters",
+      test: "/test (requires authentication)",
     },
   });
 });

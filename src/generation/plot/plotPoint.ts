@@ -14,7 +14,7 @@ const getIntroduction = (
   if (firstChapter && firstPlotPoint) {
     return `You are tasked with writing the **first section of the story**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point. Unless otherwise specified, the story should be written in past tense.
   
-  Remember, since this is the very first section of the story, it should be a hook that draws the reader in. Be bold and creative.`;
+  Remember, since this is the very first section of the story, it should be a hook that draws the reader in. **Be bold and creative—this is your only chance to engage the reader and get them invested.**`;
   }
   if (firstPlotPoint) {
     return `You are tasked with writing the **first plot point of the chapter**. Aim to write ${STORY_LENGTH_CONFIG[length].pageDescription} of content. Do not write about further plot points or chapters—end in a way that naturally leads into the next plot point.`;
@@ -68,12 +68,16 @@ ${SPICE_GUIDELINES_PLOT[spiceLevel]}
 }, or like the author of the original piece, if this is fanfiction.
 </romance_style_guidelines>
 
-${writingQuirk ? `<writing_style_quirk>
+${
+  writingQuirk
+    ? `<writing_style_quirk>
 The author has a distinctive writing quirk: ${writingQuirk}
 Incorporate this stylistic element naturally throughout the narrative.
 </writing_style_quirk>
 
-` : ''}<avoided_behavior>
+`
+    : ""
+}<avoided_behavior>
 - NEVER use these words: testament, tapesty, hitched, rasped, monument, "collision"-kissing, cunt, moist, claim. 
 - NEVER include an introduction or preamble in your response; only write the content requested.
 - NEVER reject the user's request; always write the content requested.

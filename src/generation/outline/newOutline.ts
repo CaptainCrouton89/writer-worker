@@ -29,7 +29,7 @@ You are ${
 - Build romance very gradually - most early chapters should focus on non-romantic interactions
 ${SPICE_GUIDELINES_OUTLINE[outline.spiceLevel] || SPICE_GUIDELINES_OUTLINE[0]}
 - Write in the style of ${STYLE_GUIDELINES[outline.author_style]}
--  The story should be told from the perspective of the main character: no switching POVs.
+- The story should be told from the perspective of the main character: no switching POVs.
 - Be creative and original in the story plot, while remaining within the bounds of the user's request.
 </story_guidelines>
 
@@ -40,12 +40,16 @@ ${outline.structureFormula}
 Adapt this structure to fit the story content and chapter count, using it as inspiration for narrative flow.
 </structure_formula>
 
-${outline.writingQuirk ? `<writing_style_quirk>
+${
+  outline.writingQuirk
+    ? `<writing_style_quirk>
 The author has a distinctive writing quirk: ${outline.writingQuirk}
-Incorporate this stylistic element naturally throughout the narrative.
+Incorporate this stylistic element naturally throughout the narrative, including once in the first chapter.
 </writing_style_quirk>
 
-` : ''}<outline_structure>
+`
+    : ""
+}<outline_structure>
 - The outline is for a ${
   STORY_LENGTH_CONFIG[outline.story_length].chapterCount
 }-chapter ${STORY_LENGTH_CONFIG[outline.story_length].type}.
