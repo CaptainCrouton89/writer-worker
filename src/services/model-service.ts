@@ -7,6 +7,9 @@ export interface AIModel {
   display_name: string;
   provider: string;
   is_active: boolean;
+  temperature: number;
+  top_p: number;
+  top_k: number;
 }
 
 export class ModelService {

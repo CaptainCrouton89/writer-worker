@@ -83,6 +83,9 @@ export type Database = {
           is_active: boolean
           model_name: string
           provider: string
+          temperature: number
+          top_k: number
+          top_p: number
           updated_at: string | null
         }
         Insert: {
@@ -92,6 +95,9 @@ export type Database = {
           is_active?: boolean
           model_name: string
           provider?: string
+          temperature?: number
+          top_k?: number
+          top_p?: number
           updated_at?: string | null
         }
         Update: {
@@ -101,6 +107,9 @@ export type Database = {
           is_active?: boolean
           model_name?: string
           provider?: string
+          temperature?: number
+          top_k?: number
+          top_p?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -632,6 +641,48 @@ export type Database = {
           },
           {
             foreignKeyName: "email_opens_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_send_log: {
+        Row: {
+          campaign_id: string | null
+          email_type: string
+          id: string
+          metadata: Json | null
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          email_type: string
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          email_type?: string
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaign_analytics"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "email_send_log_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "email_campaigns"

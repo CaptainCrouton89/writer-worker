@@ -247,9 +247,9 @@ export const generatePlotPoint = async (
         model: modelProvider,
         prompt,
         system,
-        temperature: 0.8,
-        topP: 0.9,
-        topK: 50,
+        temperature: model.temperature,
+        topP: model.top_p,
+        topK: model.top_k,
         seed: Math.floor(Math.random() * 1000000),
       });
 

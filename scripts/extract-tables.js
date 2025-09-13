@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const typesPath = path.join(__dirname, "../src/lib/supabase/types.ts");
 const outputPath = path.join(__dirname, "../docs/DATABASE_SCHEMA.md");
@@ -356,8 +360,5 @@ function writeOutput(markdown) {
   console.log(`✅ Schema documentation generated at ${outputPath}`);
 }
 
-if (require.main === module) {
-  extractSchema();
-}
-
-module.exports = { extractSchema };
+// Run if called directly
+extractSchema();
