@@ -1,8 +1,8 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
 import { Chapter, UserPrompt } from "../../lib/types.js";
 import { SPICE_GUIDELINES_PLOT, STYLE_GUIDELINES } from "../constants.js";
+import { ModelService } from "../../services/model-service.js";
 
 const getIntroduction = (
   firstChapter: boolean,
@@ -159,7 +159,7 @@ export const generatePlotPoint = async (
   plotPointIndex: number,
   previousChapterContent: string,
   chapterContentSoFar: string,
-  modelConfig?: { provider: string; modelName: string },
+  modelId?: string,
   writingQuirk?: string
 ): Promise<string> => {
   if (
@@ -225,12 +225,11 @@ export const generatePlotPoint = async (
       console.log(`🔍 System prompt length: ${system.length}`);
       console.log(`🔍 User prompt length: ${prompt.length}`);
 
-      // Use provided model config or default
-      const effectiveProvider = modelConfig?.provider || "openrouter";
-      const effectiveModel =
-        modelConfig?.modelName || "openrouter/horizon-beta";
+      // Get model and provider
+      const model = await ModelService.getModel(modelId);
+      const modelProvider = ModelService.getModelProvider(model);
 
-      console.log(`🔍 Model: ${effectiveProvider}/${effectiveModel}`);
+      console.log(`🔍 Model: ${model.display_name} (${model.model_name})`);
       console.log(
         `🔍 Chapter: ${chapterIndex + 1} - ${chapters[chapterIndex]?.name}`
       );
@@ -244,126 +243,15 @@ export const generatePlotPoint = async (
           : plotPointText;
       console.log(`🔍 Plot point: ${plotPointIndex + 1} - ${plotPointPreview}`);
 
-      const debugPromptPreview =
-        prompt.length > 200
-          ? `${prompt.substring(0, 100)}...${prompt.substring(
-              prompt.length - 100
-            )}`
-          : prompt;
-      const debugSystemPreview =
-        system.length > 200
-          ? `${system.substring(0, 100)}...${system.substring(
-              system.length - 100
-            )}`
-          : system;
-      console.log("prompt:", debugPromptPreview);
-      console.log("system:", debugSystemPreview);
-
-      let result;
-      try {
-        // Use the model from configuration if provided
-        if (modelConfig) {
-          if (modelConfig.provider === "openrouter") {
-            const openrouter = createOpenRouter({
-              apiKey: process.env.OPENROUTER_API_KEY,
-            });
-
-            result = await generateText({
-              model: openrouter(modelConfig.modelName),
-              prompt,
-              system,
-              temperature: 0.8,
-              topP: 0.9,
-              topK: 50,
-              seed: Math.floor(Math.random() * 1000000),
-            });
-          } else if (modelConfig.provider === "google") {
-            const openrouter = createOpenRouter({
-              apiKey: process.env.OPENROUTER_API_KEY,
-            });
-            result = await generateText({
-              model: openrouter(modelConfig.modelName),
-              prompt,
-              system,
-              temperature: 0.8,
-              topP: 0.9,
-              topK: 50,
-              seed: Math.floor(Math.random() * 1000000),
-            });
-          } else {
-            throw new Error(`Unsupported provider: ${modelConfig.provider}`);
-          }
-        } else {
-          // Fallback to original logic if no config provided
-          const openrouter = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-          });
-
-          result = await generateText({
-            model: openrouter("openrouter/horizon-beta"),
-            prompt,
-            system,
-            temperature: 0.8,
-            topP: 0.9,
-            topK: 50,
-            seed: Math.floor(Math.random() * 1000000),
-          });
-        }
-      } catch (openrouterError) {
-        console.log(
-          `🔄 OpenRouter with primary model failed, trying OpenRouter with Gemini...`
-        );
-
-        try {
-          const openrouter = createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY,
-          });
-
-          result = await generateText({
-            model: openrouter("google/gemini-2.5-pro"),
-            prompt,
-            system,
-            temperature: 0.8,
-            topP: 0.9,
-            topK: 50,
-            seed: Math.floor(Math.random() * 1000000),
-          });
-        } catch (apiError) {
-          // Check if this is a content block error
-          const errorCause = (apiError as any)?.cause;
-          const errorValue = errorCause?.value;
-
-          if (errorValue?.promptFeedback?.blockReason) {
-            const blockReason = errorValue.promptFeedback.blockReason;
-            console.error(`🚫 Content blocked by AI model: ${blockReason}`);
-
-            // Throw a more informative error
-            throw new Error(
-              `Content generation blocked by AI model due to: ${blockReason}. The story prompts violate content policies and need to be modified to work with the model's safety guidelines.`
-            );
-          }
-
-          // Log raw API error details for other errors
-          console.error(`🔥 Raw API Error:`, {
-            name: apiError?.constructor?.name,
-            message: (apiError as any)?.message,
-            status: (apiError as any)?.status,
-            statusText: (apiError as any)?.statusText,
-            cause: (apiError as any)?.cause,
-            response: (apiError as any)?.response,
-          });
-
-          // If it's an API response error, try to log the raw response body
-          if ((apiError as any)?.response?.body) {
-            console.error(
-              `🔥 Raw response body:`,
-              (apiError as any).response.body
-            );
-          }
-
-          throw apiError; // Re-throw to be caught by outer catch
-        }
-      }
+      const result = await generateText({
+        model: modelProvider,
+        prompt,
+        system,
+        temperature: 0.8,
+        topP: 0.9,
+        topK: 50,
+        seed: Math.floor(Math.random() * 1000000),
+      });
 
       // Log detailed response information for debugging
       const responseText = result.text || "";

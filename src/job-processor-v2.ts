@@ -125,7 +125,12 @@ export class JobProcessorV2 {
 
     // Step 6: Complete the job
     await this.updateJobProgress(job.id, 100, JOB_STEPS.COMPLETING_JOB);
-    await this.completeJob(job.id, job.chapter_id, job.sequence_id, chapterIndex === 0);
+    await this.completeJob(
+      job.id,
+      job.chapter_id,
+      job.sequence_id,
+      chapterIndex === 0
+    );
   }
 
   private async processVideoGenerationJob(job: GenerationJob): Promise<void> {
@@ -172,7 +177,12 @@ export class JobProcessorV2 {
     await this.updateJobProgress(job.id, 100, VIDEO_STEPS.COMPLETED);
     // For video generation, determine if it's first chapter
     const chapterIndex = await getChapterIndex(job.chapter_id);
-    await this.completeJob(job.id, job.chapter_id, job.sequence_id, chapterIndex === 0);
+    await this.completeJob(
+      job.id,
+      job.chapter_id,
+      job.sequence_id,
+      chapterIndex === 0
+    );
 
     console.log(
       `✅ Video generation completed for quote ${job.quote_id}: ${videoUrl}`
@@ -200,7 +210,6 @@ export class JobProcessorV2 {
 
     return data;
   }
-
 
   private async generateAndSaveMetadata(
     sequenceId: string,
@@ -241,7 +250,8 @@ export class JobProcessorV2 {
 
     const metadata = await generateSequenceMetadata(
       JSON.stringify(outlineData),
-      storyLength
+      storyLength,
+      "fc96ce93-b98f-4606-92fc-8fe2c4db1ef6" // Gemini 2.5 Pro - always use for metadata
     );
     console.log(`✅ Generated metadata:`, metadata);
 
@@ -299,21 +309,18 @@ export class JobProcessorV2 {
   ): Promise<void> {
     console.log(`✍️ Generating content for chapter ${chapterIndex + 1}`);
 
-    // Get AI model configuration from job
-    let modelConfig: { provider: string; modelName: string } | undefined;
+    // Log model ID if available
     if (job.model_id) {
       const { data: aiModel } = await supabase
         .from("ai_models")
         .select("provider, model_name")
         .eq("id", job.model_id)
         .single();
-      
+
       if (aiModel) {
-        modelConfig = {
-          provider: aiModel.provider,
-          modelName: aiModel.model_name,
-        };
-        console.log(`🤖 Using AI model: ${aiModel.provider}/${aiModel.model_name}`);
+        console.log(
+          `🤖 Using AI model: ${aiModel.provider}/${aiModel.model_name}`
+        );
       }
     }
 
@@ -345,7 +352,7 @@ export class JobProcessorV2 {
       latestPrompt,
       chapters,
       previousChapterContent,
-      modelConfig,
+      job.model_id || undefined,
       sequence.writing_quirk
     );
 
@@ -357,7 +364,7 @@ export class JobProcessorV2 {
   }
 
   private async completeJob(
-    jobId: string, 
+    jobId: string,
     chapterId: string,
     sequenceId: string,
     isFirstChapter: boolean

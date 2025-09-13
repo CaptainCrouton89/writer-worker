@@ -41,7 +41,7 @@ export interface MetadataGenerationResult {
 }
 
 export interface WritingQuirksResult {
-  quirks: string[];
+  quirks: string[] | null;
 }
 
 export class TestGenerationService {
@@ -51,7 +51,7 @@ export class TestGenerationService {
   async generateTestWritingQuirks(
     authorStyle: AuthorStyle,
     spiceLevel: SpiceLevel
-  ): Promise<TestGenerationResult<WritingQuirksResult>> {
+  ): Promise<TestGenerationResult<WritingQuirksResult | null>> {
     try {
       console.log("🎨 Generating test writing quirks with params:", {
         authorStyle,

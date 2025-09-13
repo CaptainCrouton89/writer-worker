@@ -1,4 +1,3 @@
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation";
 import { AuthorStyle, Chapter, SpiceLevel, StoryLength } from "../../lib/types";
@@ -9,6 +8,7 @@ import {
   STYLE_GUIDELINES,
 } from "../constants";
 import { parseOutlineText } from "./types";
+import { ModelService } from "../../services/model-service.js";
 
 const getRandomFormula = (): string => {
   return NOVEL_FORMULAS[Math.floor(Math.random() * NOVEL_FORMULAS.length)];
@@ -131,6 +131,7 @@ export const generateNewOutline = async (storyOutline: {
   spice_level: SpiceLevel;
   author_style: AuthorStyle;
   writingQuirk?: string;
+  modelId?: string;
 }): Promise<Chapter[]> => {
   // Validate story_length
   if (
@@ -184,13 +185,15 @@ export const generateNewOutline = async (storyOutline: {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       console.log(
-        `🔮 Generating new story outline with OpenRouter Gemini (attempt ${attempt}/${MAX_RETRIES})`
+        `🔮 Generating new story outline (attempt ${attempt}/${MAX_RETRIES})`
       );
-      const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
-      });
+
+      // Get model and provider
+      const model = await ModelService.getModel(storyOutline.modelId);
+      const modelProvider = ModelService.getModelProvider(model);
+
       const { text } = await generateText({
-        model: openrouter("google/gemini-2.5-pro"),
+        model: modelProvider,
         system,
         prompt,
         temperature: 0.5,

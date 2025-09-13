@@ -2,6 +2,8 @@
 let currentSequences = [];
 let selectedSequence = null;
 let lastGeneratedOutline = null;
+let availableModels = [];
+let selectedModelId = null;
 
 // Helper function to get auth headers
 function getAuthHeaders() {
@@ -11,11 +13,60 @@ function getAuthHeaders() {
     };
 }
 
+// Load models from server API
+async function loadModels() {
+    try {
+        const baseUrl = document.getElementById('apiBaseUrl').value;
+        const response = await fetch(`${baseUrl}/test/api/models`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        availableModels = result.models || [];
+        populateModelSelect();
+
+    } catch (error) {
+        showError('Failed to load models: ' + error.message);
+        // Set empty option if failed
+        const select = document.getElementById('modelSelect');
+        select.innerHTML = '<option value="">Failed to load models</option>';
+    }
+}
+
+// Populate model dropdown
+function populateModelSelect() {
+    const select = document.getElementById('modelSelect');
+    select.innerHTML = '<option value="">Select a model (optional)...</option>';
+
+    availableModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = model.display_name;
+        select.appendChild(option);
+    });
+
+    // Select first model by default if available
+    if (availableModels.length > 0) {
+        select.value = availableModels[0].id;
+        selectedModelId = availableModels[0].id;
+    }
+}
+
+// Handle model selection change
+function handleModelChange() {
+    selectedModelId = document.getElementById('modelSelect').value;
+}
+
 // Load sequences from server API instead of direct Supabase access
 async function loadSequences() {
     try {
         showLoading('plotPointLoading');
-        
+
         const baseUrl = document.getElementById('apiBaseUrl').value;
         const response = await fetch(`${baseUrl}/test/api/sequences`, {
             method: 'GET',
@@ -29,7 +80,7 @@ async function loadSequences() {
         const result = await response.json();
         currentSequences = result.sequences || [];
         populateSequenceSelect();
-        
+
     } catch (error) {
         showError('Failed to load sequences: ' + error.message);
     } finally {
@@ -214,7 +265,7 @@ async function generateComponent(componentType) {
         const response = await fetch(`${baseUrl}/test/api/generate-${componentType}`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ outline })
+            body: JSON.stringify({ outline, model_id: selectedModelId })
         });
 
         if (!response.ok) {
@@ -242,9 +293,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!apiBaseUrlInput.value) {
         apiBaseUrlInput.value = 'http://localhost:3951';
     }
-    
-    // Load sequences on page load
+
+    // Load models and sequences on page load
+    loadModels();
     loadSequences();
+
+    // Add model selection event listener
+    document.getElementById('modelSelect').addEventListener('change', handleModelChange);
 
     // Handle quirks form submission
     document.getElementById('quirksForm').addEventListener('submit', async function(e) {
@@ -252,7 +307,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = {
             author_style: parseInt(document.getElementById('quirksAuthorStyle').value),
-            spice_level: parseInt(document.getElementById('quirksSpiceLevel').value)
+            spice_level: parseInt(document.getElementById('quirksSpiceLevel').value),
+            story_description: document.getElementById('quirksStoryDescription').value,
+            model_id: selectedModelId
         };
 
         try {
@@ -298,7 +355,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const outlineText = document.getElementById('metadataOutline').value;
         const formData = {
             outline: outlineText,
-            story_length: parseInt(document.getElementById('metadataStoryLength').value)
+            story_length: parseInt(document.getElementById('metadataStoryLength').value),
+            model_id: selectedModelId
         };
 
         try {
@@ -368,7 +426,8 @@ document.addEventListener('DOMContentLoaded', function() {
             spice_level: parseInt(document.getElementById('spiceLevel').value),
             story_length: parseInt(document.getElementById('storyLength').value),
             style: parseInt(document.getElementById('authorStyle').value),
-            writingQuirk: document.getElementById('writingQuirk').value.trim() || null
+            writingQuirk: document.getElementById('writingQuirk').value.trim() || null,
+            model_id: selectedModelId
         };
 
         try {
@@ -422,7 +481,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
                     outline: JSON.stringify(lastGeneratedOutline),
-                    story_length: storyLength
+                    story_length: storyLength,
+                    model_id: selectedModelId
                 })
             });
 
@@ -475,7 +535,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = {
             sequenceId: selectedSequence.id,
             chapterIndex: chapterIndex,
-            plotPointIndex: plotPointIndex === 'full' ? 'full' : parseInt(plotPointIndex)
+            plotPointIndex: plotPointIndex === 'full' ? 'full' : parseInt(plotPointIndex),
+            model_id: selectedModelId
         };
 
         try {

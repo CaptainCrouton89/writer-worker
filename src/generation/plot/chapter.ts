@@ -11,7 +11,7 @@ export const generateChapter = async (
   userPrompt: UserPrompt,
   chapters: Chapter[],
   previousChapterContent: string,
-  modelConfig?: { provider: string; modelName: string },
+  modelId?: string,
   writingQuirk?: string | null
 ): Promise<string> => {
   const chapter = chapters[chapterIndex];
@@ -48,7 +48,7 @@ export const generateChapter = async (
       plotPointIndex,
       previousChapterContent,
       chapterContent,
-      modelConfig,
+      modelId,
       writingQuirk || undefined
     );
 

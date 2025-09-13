@@ -6,6 +6,7 @@ import { generatePlotPoint } from "./generation/plot/plotPoint.js";
 import { generateChapter } from "./generation/plot/chapter.js";
 import { generateWritingQuirks } from "./generation/quirks/writingQuirks.js";
 import { generateSequenceMetadata } from "./generation/metadata/metadata.js";
+import { ModelService } from "./services/model-service.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -124,7 +125,8 @@ router.post('/api/generate-outline', async (req: Request, res: Response) => {
       spice_level,
       story_length,
       style,
-      writingQuirk
+      writingQuirk,
+      model_id
     } = req.body;
 
     // Validate required fields
@@ -169,7 +171,8 @@ router.post('/api/generate-outline', async (req: Request, res: Response) => {
       user_tags: tags,
       spice_level,
       author_style: style,
-      writingQuirk
+      writingQuirk,
+      modelId: model_id
     });
 
     res.json({
@@ -180,6 +183,32 @@ router.post('/api/generate-outline', async (req: Request, res: Response) => {
     console.error('Error generating outline:', error);
     res.status(500).json({
       error: 'Failed to generate outline',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// GET /api/models - List available AI models from database
+router.get('/api/models', async (req: Request, res: Response) => {
+  try {
+    const { data: models, error } = await supabase
+      .from('ai_models')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_name', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      models: models || []
+    });
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    res.status(500).json({
+      error: 'Failed to fetch models',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -218,7 +247,8 @@ router.post('/api/generate-plot-point', async (req: Request, res: Response) => {
       sequenceId,
       chapterIndex,
       plotPointIndex,
-      previousContent
+      previousContent,
+      model_id
     } = req.body;
 
     if (!sequenceId) {
@@ -305,7 +335,8 @@ router.post('/api/generate-plot-point', async (req: Request, res: Response) => {
       chapterIndex,
       plotPointIndex,
       actualPreviousContent,
-      ''
+      '',
+      model_id
     );
 
     res.json({
@@ -325,7 +356,7 @@ router.post('/api/generate-plot-point', async (req: Request, res: Response) => {
 // POST /api/generate-quirks - Generate writing quirks
 router.post('/api/generate-quirks', async (req: Request, res: Response) => {
   try {
-    const { author_style, spice_level, story_description } = req.body;
+    const { author_style, spice_level, story_description, model_id } = req.body;
 
     if (author_style == null || ![0, 1, 2, 3, 4].includes(author_style)) {
       res.status(400).json({
@@ -349,14 +380,16 @@ router.post('/api/generate-quirks', async (req: Request, res: Response) => {
     }
 
     const quirks = await generateWritingQuirks(
-      author_style, 
-      spice_level, 
-      story_description
+      author_style,
+      spice_level,
+      story_description,
+      model_id,
+      true // Force generation for testing
     );
 
     res.json({
       success: true,
-      quirks: quirks.quirks
+      quirks: quirks ? quirks.quirks : null
     });
   } catch (error) {
     console.error('Error generating quirks:', error);
@@ -370,7 +403,7 @@ router.post('/api/generate-quirks', async (req: Request, res: Response) => {
 // POST /api/generate-metadata - Generate full metadata from outline
 router.post('/api/generate-metadata', async (req: Request, res: Response) => {
   try {
-    const { outline, story_length } = req.body;
+    const { outline, story_length, model_id } = req.body;
 
     if (!outline || typeof outline !== 'string') {
       res.status(400).json({
@@ -387,7 +420,7 @@ router.post('/api/generate-metadata', async (req: Request, res: Response) => {
       return;
     }
 
-    const metadata = await generateSequenceMetadata(outline, storyLength);
+    const metadata = await generateSequenceMetadata(outline, storyLength, model_id);
 
     res.json({
       success: true,
@@ -405,7 +438,7 @@ router.post('/api/generate-metadata', async (req: Request, res: Response) => {
 // POST /api/generate-title-description - Generate title and description only
 router.post('/api/generate-title-description', async (req: Request, res: Response) => {
   try {
-    const { outline, story_length } = req.body;
+    const { outline, story_length, model_id } = req.body;
 
     if (!outline || typeof outline !== 'string') {
       res.status(400).json({
@@ -417,7 +450,7 @@ router.post('/api/generate-title-description', async (req: Request, res: Respons
     const storyLength = story_length != null ? story_length : 0;
     
     // Generate full metadata but only return title and description
-    const metadata = await generateSequenceMetadata(outline, storyLength);
+    const metadata = await generateSequenceMetadata(outline, storyLength, model_id);
 
     res.json({
       success: true,
@@ -438,7 +471,7 @@ router.post('/api/generate-title-description', async (req: Request, res: Respons
 // POST /api/generate-tags - Generate tags only
 router.post('/api/generate-tags', async (req: Request, res: Response) => {
   try {
-    const { outline } = req.body;
+    const { outline, model_id } = req.body;
 
     if (!outline || typeof outline !== 'string') {
       res.status(400).json({
@@ -448,7 +481,7 @@ router.post('/api/generate-tags', async (req: Request, res: Response) => {
     }
 
     // Generate full metadata but only return tags
-    const metadata = await generateSequenceMetadata(outline, 0);
+    const metadata = await generateSequenceMetadata(outline, 0, model_id);
 
     res.json({
       success: true,
@@ -468,7 +501,7 @@ router.post('/api/generate-tags', async (req: Request, res: Response) => {
 // POST /api/generate-trigger-warnings - Generate trigger warnings only
 router.post('/api/generate-trigger-warnings', async (req: Request, res: Response) => {
   try {
-    const { outline } = req.body;
+    const { outline, model_id } = req.body;
 
     if (!outline || typeof outline !== 'string') {
       res.status(400).json({
@@ -478,7 +511,7 @@ router.post('/api/generate-trigger-warnings', async (req: Request, res: Response
     }
 
     // Generate full metadata but only return trigger warnings
-    const metadata = await generateSequenceMetadata(outline, 0);
+    const metadata = await generateSequenceMetadata(outline, 0, model_id);
 
     res.json({
       success: true,
@@ -498,7 +531,7 @@ router.post('/api/generate-trigger-warnings', async (req: Request, res: Response
 // POST /api/generate-target-audience - Generate target audience only
 router.post('/api/generate-target-audience', async (req: Request, res: Response) => {
   try {
-    const { outline } = req.body;
+    const { outline, model_id } = req.body;
 
     if (!outline || typeof outline !== 'string') {
       res.status(400).json({
@@ -508,7 +541,7 @@ router.post('/api/generate-target-audience', async (req: Request, res: Response)
     }
 
     // Generate full metadata but only return target audience
-    const metadata = await generateSequenceMetadata(outline, 0);
+    const metadata = await generateSequenceMetadata(outline, 0, model_id);
 
     res.json({
       success: true,
@@ -532,7 +565,8 @@ router.post('/api/generate-chapter', async (req: Request, res: Response) => {
     const {
       sequenceId,
       chapterIndex,
-      previousChapterContent
+      previousChapterContent,
+      model_id
     } = req.body;
 
     if (!sequenceId) {
@@ -620,7 +654,8 @@ router.post('/api/generate-chapter', async (req: Request, res: Response) => {
       chapterIndex,
       userPrompt,
       chapters,
-      previousChapterContent
+      previousChapterContent,
+      model_id
     );
 
     res.json({

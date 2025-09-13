@@ -1,8 +1,8 @@
 import { openai } from "@ai-sdk/openai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { STORY_LENGTH_CONFIG } from "../../lib/constants/generation.js";
+import { ModelService } from "../../services/model-service.js";
 
 // Schema for title and description only
 const TitleDescriptionSchema = z.object({
@@ -101,7 +101,8 @@ const SequenceMetadataSchema = z.object({
 // Generate title and description only
 async function generateTitleDescription(
   outline: string,
-  storyLength: number = 0
+  storyLength: number = 0,
+  modelId?: string
 ): Promise<z.infer<typeof TitleDescriptionSchema>> {
   const storyConfig = STORY_LENGTH_CONFIG[storyLength];
   const storyType = storyConfig.type;
@@ -167,13 +168,15 @@ ${outline}`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `📝 Generating title/description with OpenRouter Gemini (attempt ${attempt}/${maxRetries})`
+        `📝 Generating title/description (attempt ${attempt}/${maxRetries})`
       );
-      const openrouter = createOpenRouter({
-        apiKey: process.env.OPENROUTER_API_KEY,
-      });
+
+      // Get model and provider
+      const model = await ModelService.getModel(modelId);
+      const modelProvider = ModelService.getModelProvider(model);
+
       const { object } = await generateObject({
-        model: openrouter("google/gemini-2.5-pro"),
+        model: modelProvider,
         system: systemPrompt,
         prompt,
         schema: TitleDescriptionSchema,
@@ -202,7 +205,8 @@ ${outline}`;
 
 // Generate tags
 async function generateTags(
-  outline: string
+  outline: string,
+  modelId?: string
 ): Promise<z.infer<typeof TagsSchema>> {
   const systemPrompt = `## Identity
 You are a content categorization specialist for romance and erotic fiction with deep knowledge of reader search patterns and genre conventions.
@@ -250,10 +254,15 @@ ${outline}`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🏷️  Generating tags with GPT-4.1-mini (attempt ${attempt}/${maxRetries})`
+        `🏷️  Generating tags (attempt ${attempt}/${maxRetries})`
       );
+
+      // Get model and provider
+      const model = await ModelService.getModel(modelId);
+      const modelProvider = ModelService.getModelProvider(model);
+
       const { object } = await generateObject({
-        model: openai("gpt-4.1-mini"),
+        model: modelProvider,
         system: systemPrompt,
         prompt,
         schema: TagsSchema,
@@ -282,7 +291,8 @@ ${outline}`;
 
 // Generate trigger warnings
 async function generateTriggerWarnings(
-  outline: string
+  outline: string,
+  modelId?: string
 ): Promise<z.infer<typeof TriggerWarningsSchema>> {
   const systemPrompt = `You are a content safety specialist identifying potentially triggering content in romance fiction.
 
@@ -308,10 +318,15 @@ Only list common, well-known trigger warnings, or none at all if none exist.`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `⚠️  Generating trigger warnings with GPT-5-mini (attempt ${attempt}/${maxRetries})`
+        `⚠️  Generating trigger warnings (attempt ${attempt}/${maxRetries})`
       );
+
+      // Get model and provider
+      const model = await ModelService.getModel(modelId);
+      const modelProvider = ModelService.getModelProvider(model);
+
       const { object } = await generateObject({
-        model: openai("gpt-5-mini"),
+        model: modelProvider,
         system: systemPrompt,
         prompt,
         schema: TriggerWarningsSchema,
@@ -342,7 +357,8 @@ Only list common, well-known trigger warnings, or none at all if none exist.`;
 
 // Detect explicit content
 async function detectExplicitContent(
-  outline: string
+  outline: string,
+  modelId?: string
 ): Promise<z.infer<typeof ExplicitContentSchema>> {
   const systemPrompt = `You are a content classifier. Determine if stories contain R-rated, hardcore sexually explicit content.`;
 
@@ -356,10 +372,15 @@ ${outline}`;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🔞 Detecting explicit content with GPT-5-nano (attempt ${attempt}/${maxRetries})`
+        `🔞 Detecting explicit content (attempt ${attempt}/${maxRetries})`
       );
+
+      // Get model and provider
+      const model = await ModelService.getModel(modelId);
+      const modelProvider = ModelService.getModelProvider(model);
+
       const { object } = await generateObject({
-        model: openai("gpt-5-nano"),
+        model: modelProvider,
         system: systemPrompt,
         prompt,
         schema: ExplicitContentSchema,
@@ -385,7 +406,8 @@ ${outline}`;
 
 // Generate target audience
 async function generateTargetAudience(
-  outline: string
+  outline: string,
+  modelId?: string
 ): Promise<z.infer<typeof TargetAudienceSchema>> {
   const systemPrompt = `You are an audience analysis specialist for romance and erotic fiction. Analyze story content to determine target audiences based on character dynamics, relationship types, and appeal factors.
 
@@ -416,10 +438,15 @@ Consider the main characters, relationship dynamics, perspective, and themes to 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
-        `🎯 Generating target audience with GPT-5-nano (attempt ${attempt}/${maxRetries})`
+        `🎯 Generating target audience (attempt ${attempt}/${maxRetries})`
       );
+
+      // Get model and provider
+      const model = await ModelService.getModel(modelId);
+      const modelProvider = ModelService.getModelProvider(model);
+
       const { object } = await generateObject({
-        model: openai("gpt-5-nano"),
+        model: modelProvider,
         system: systemPrompt,
         prompt,
         schema: TargetAudienceSchema,
@@ -446,7 +473,8 @@ Consider the main characters, relationship dynamics, perspective, and themes to 
 // Main function that orchestrates parallel calls
 export const generateSequenceMetadata = async (
   outline: string,
-  storyLength: number = 0
+  storyLength: number = 0,
+  modelId?: string
 ): Promise<z.infer<typeof SequenceMetadataSchema>> => {
   console.log("🏷️ Generating sequence metadata with parallel AI calls");
 
@@ -459,11 +487,11 @@ export const generateSequenceMetadata = async (
       explicitContentResult,
       targetAudienceResult,
     ] = await Promise.all([
-      generateTitleDescription(outline, storyLength),
-      generateTags(outline),
-      generateTriggerWarnings(outline),
-      detectExplicitContent(outline),
-      generateTargetAudience(outline),
+      generateTitleDescription(outline, storyLength, modelId),
+      generateTags(outline, modelId),
+      generateTriggerWarnings(outline, modelId),
+      detectExplicitContent(outline, modelId),
+      generateTargetAudience(outline, modelId),
     ]);
 
     // Combine results

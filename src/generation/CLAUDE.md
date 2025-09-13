@@ -1,6 +1,6 @@
 # Generation Directory
 
-This directory contains AI-powered story generation modules that work with Google's Gemini AI model to create adult fiction content. The generation system is organized into three main areas: metadata extraction, story outlining, and plot/chapter content generation.
+This directory contains AI-powered story generation modules that work with multiple AI models through the centralized ModelService to create adult fiction content. The generation system is organized into three main areas: metadata extraction, story outlining, and plot/chapter content generation.
 
 ## Architecture Overview
 
@@ -33,9 +33,9 @@ generation/
 Generates story metadata from completed outlines using structured AI extraction:
 
 - **Purpose**: Extract title, description, tags, trigger warnings, and content ratings
-- **Input**: JSON string representation of story outline
+- **Input**: JSON string representation of story outline and optional model ID
 - **Output**: Structured metadata object with validation
-- **Model**: Gemini 2.5 Pro with temperature 0.2 for consistency
+- **Model**: Database-driven model selection via ModelService (defaults to Gemini 2.5 Pro)
 - **Schema**: Zod-validated `SequenceMetadataSchema`
 
 Key features:
@@ -54,9 +54,9 @@ Handles story structure creation and modification:
 
 #### New Outline Generation (`newOutline.ts`)
 - **Purpose**: Create initial story outlines from user prompts
-- **Input**: User prompt, story length, tags, spice level
+- **Input**: User prompt, story length, tags, spice level, optional model ID
 - **Output**: Array of chapters with plot points
-- **Model**: Gemini 2.5 Pro with temperature 0.5 for creativity
+- **Model**: Database-driven model selection via ModelService
 
 Features:
 - Three spice levels with progressive intimacy guidelines
@@ -89,9 +89,9 @@ Handles detailed content creation from outlines:
 
 #### Plot Point Generation (`plotPoint.ts`)
 - **Purpose**: Generate detailed prose for individual plot points
-- **Input**: User prompt, story context, chapter/plot point indexes, previous content
+- **Input**: User prompt, story context, chapter/plot point indexes, previous content, optional model ID
 - **Output**: Detailed prose section (400-700 words depending on story length)
-- **Model**: Gemini 2.5 Pro with temperature 0.8 for creative writing
+- **Model**: Database-driven model selection via ModelService
 
 Key features:
 - Three spice level guidelines (subtle/moderate/explicit)
@@ -110,11 +110,22 @@ The system uses configurable parameters for different story types:
 - **Plot Points per Chapter**: Typically 5 plot points
 - **Word Target**: 400-700 words per plot point
 
+## AI Model Service Integration
+
+All generation modules now use the centralized **ModelService** (`src/services/model-service.ts`) for AI model management:
+
+- **Database-driven model selection**: Models configured in `ai_models` table
+- **Caching**: In-memory model configuration caching for performance
+- **Multi-provider support**: Currently supports OpenRouter, extensible for other providers
+- **Dynamic switching**: Jobs can specify different models via `model_id` parameter
+- **Default model**: Uses Gemini 2.5 Pro when no model_id specified in job configuration
+
 ## Integration Points
 
 The generation modules integrate with:
 
-- **JobProcessorV2**: Main orchestration for generation jobs
+- **JobProcessorV2**: Main orchestration for generation jobs with model ID support
+- **ModelService**: Centralized AI model management and provider instantiation
 - **OutlineProcessor**: Manages outline processing logic
 - **SequenceService**: Database operations for sequences/stories
 - **Supabase**: Real-time progress tracking and content storage
