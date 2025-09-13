@@ -1,17 +1,13 @@
 import express, { Request, Response, NextFunction } from "express";
-import { supabase } from "./lib/supabase.js";
-import { UserPrompt, Chapter, Sequence, GenerationJob } from "./lib/types.js";
-import { generateNewOutline } from "./generation/outline/newOutline.js";
-import { generatePlotPoint } from "./generation/plot/plotPoint.js";
-import { generateChapter } from "./generation/plot/chapter.js";
-import { generateWritingQuirks } from "./generation/quirks/writingQuirks.js";
-import { generateSequenceMetadata } from "./generation/metadata/metadata.js";
-import { ModelService } from "./services/model-service.js";
+import { supabase } from "./lib/supabase";
+import { UserPrompt, Chapter, Sequence, GenerationJob } from "./lib/types";
+import { generateNewOutline } from "./generation/outline/newOutline";
+import { generatePlotPoint } from "./generation/plot/plotPoint";
+import { generateChapter } from "./generation/plot/chapter";
+import { generateWritingQuirks } from "./generation/quirks/writingQuirks";
+import { generateSequenceMetadata } from "./generation/metadata/metadata";
+import { ModelService } from "./services/model-service";
 import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
