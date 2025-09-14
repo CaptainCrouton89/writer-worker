@@ -2,21 +2,24 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { AuthorStyle, SpiceLevel } from "../../lib/types";
 import { ModelService } from "../../services/model-service.js";
+import { STYLE_GUIDELINES } from "../constants";
 
 // Schema for writing quirks response
 const WritingQuirksSchema = z.object({
   quirks: z
     .array(z.string())
-    .length(4)
-    .describe("A writing quirk in format 'Title - Description', e.g., 'Occasional Flashbacks - 2-3 sentence memories in italics'")
+    .length(8)
+    .describe(
+      "A writing quirk in format 'Title - Description', e.g., 'Occasional Flashbacks - 2-3 sentence memories in italics'"
+    )
     .nullable(),
 });
 
 export type WritingQuirksResponse = z.infer<typeof WritingQuirksSchema>;
 
 /**
- * Generates 4 creative writing quirks using OpenRouter Gemini 2.5 Pro
- * Returns null 40% of the time for stories without quirks
+ * Generates 8 creative writing quirks using OpenRouter Gemini 2.5 Pro
+ * Returns null 20% of the time for stories without quirks
  */
 export const generateWritingQuirks = async (
   authorStyle: AuthorStyle,
@@ -25,33 +28,16 @@ export const generateWritingQuirks = async (
   modelId?: string,
   forceGeneration: boolean = false
 ): Promise<WritingQuirksResponse | null> => {
+  const authorStyleString = STYLE_GUIDELINES[authorStyle];
+  const spiceLevelString = ["sweet romance", "moderate heat", "explicit"][
+    spiceLevel
+  ];
   // 40% chance of no quirks (unless forced for testing)
   if (!forceGeneration && Math.random() < 0.4) {
     console.log("📝 No writing quirks for this story (40% chance)");
     return null;
   }
-  const systemPrompt = `You are a creative writing specialist focused on subtle, effective stylistic techniques that enhance narrative flow without disruption.
-
-<context>
-Author Style: ${authorStyle}
-Spice Level: ${spiceLevel}
-</context>
-
-<philosophy>
-Writing quirks should be:
-- Subtle enhancements that readers may not consciously notice
-- Natural extensions of the narrative voice
-- Used sparingly to avoid overuse
-- Focused on rhythm, emphasis, and emotional impact
-</philosophy>`;
-
-  const prompt = `<story_context>
-${storyDescription}
-</story_context>
-
-<task>
-Generate exactly 4 subtle writing quirks that enhance the narrative without disrupting flow. Focus on techniques that feel natural and unobtrusive.
-</task>
+  const systemPrompt = `You are ${authorStyleString}, a creative writing specialist focused on subtle, effective stylistic techniques that enhance narrative flow without disruption.
 
 <format>
 Each quirk MUST follow: "[Name] - [How it appears in text]"
@@ -83,12 +69,6 @@ Example: "Italic Memories - Brief flashbacks appear in italics, usually one sent
 - Single-line dialogue without tags in rapid exchanges
 - Sentence fragments in emotional peaks
 
-**Sensory Focus:**
-- Temperature descriptions for emotional states
-- Sound emphasis during tense moments
-- Texture focus during intimate scenes
-- Scent memories linking to past
-
 **Internal Voice:**
 - Rhetorical questions in narration
 - Direct thoughts without italics or tags
@@ -103,7 +83,6 @@ Example: "Italic Memories - Brief flashbacks appear in italics, usually one sent
 - "Sensory Memories - Specific scents or sounds trigger brief flashback lines"
 - "Em-dash Thoughts - Sudden realizations interrupt sentences with em-dashes"
 - "Rhetorical Questions - Narrator poses unanswered questions to build tension"
-- "Temperature Emotions - Heat and cold describe emotional states"
 - "And/But Starters - Sentences begin with conjunctions for conversational flow"
 </examples>
 
@@ -115,7 +94,21 @@ Example: "Italic Memories - Brief flashbacks appear in italics, usually one sent
 ✓ Ensure natural integration with narrative flow
 </requirements>
 
-Generate 4 quirks perfect for THIS specific story.`;
+<philosophy>
+Writing quirks should be:
+- Subtle enhancements that readers may not consciously notice
+- Natural extensions of the narrative voice
+- Used sparingly to avoid overuse
+- Focused on rhythm, emphasis, and emotional impact
+</philosophy>`;
+
+  const prompt = `<story_context>
+Author Style: ${authorStyleString}
+Romance/Erotic Level: ${spiceLevelString}
+Story Description: ${storyDescription}
+</story_context>
+
+Generate exactly 8 subtle writing quirks that enhance the narrative without disrupting flow. Focus on techniques that feel natural and unobtrusive.`;
 
   const maxRetries = 3;
   let lastError: Error = new Error("Unknown error");
@@ -169,7 +162,7 @@ export const selectRandomQuirk = (quirks: string[] | null): string | null => {
   if (!quirks || quirks.length === 0) {
     return null;
   }
-  
+
   const randomIndex = Math.floor(Math.random() * quirks.length);
   return quirks[randomIndex];
 };

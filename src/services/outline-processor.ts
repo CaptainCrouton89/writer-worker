@@ -42,7 +42,10 @@ export class OutlineProcessor {
 
     if (existingChapters.length === 0) {
       console.log(`🔮 No outline exists, generating new outline`);
-      const chapters = await this.generateNewOutline(currentPrompt, sequence.id);
+      const chapters = await this.generateNewOutline(
+        currentPrompt,
+        sequence.id
+      );
       return {
         chapters,
         wasGenerated: true,
@@ -96,18 +99,21 @@ export class OutlineProcessor {
       prompt.style,
       prompt.spice_level as SpiceLevel,
       prompt.prompt,
-      'fc96ce93-b98f-4606-92fc-8fe2c4db1ef6' // Gemini 2.5 Pro - always use for quirks
+      "ba19ebe8-8d5c-4547-b3c7-eb3d6148fa5e" // Kimi k2 free - always use for quirks
     );
-    
+
     let selectedQuirk: string | null = null;
-    
+
     if (quirksResponse && quirksResponse.quirks) {
       selectedQuirk = selectRandomQuirk(quirksResponse.quirks);
       console.log(`✨ Selected writing quirk: ${selectedQuirk}`);
-      
+
       // Save the quirk to the sequence
       if (selectedQuirk) {
-        await this.sequenceService.updateWritingQuirk(sequenceId, selectedQuirk);
+        await this.sequenceService.updateWritingQuirk(
+          sequenceId,
+          selectedQuirk
+        );
       }
     } else {
       console.log(`📝 No writing quirks for this story`);
@@ -135,7 +141,11 @@ export class OutlineProcessor {
 
     // For regeneration, use the existing writing quirk if available
     const existingQuirk = sequence.writing_quirk;
-    console.log(`🔄 Using existing writing quirk: ${existingQuirk ? existingQuirk : 'none'}`);
+    console.log(
+      `🔄 Using existing writing quirk: ${
+        existingQuirk ? existingQuirk : "none"
+      }`
+    );
 
     const chapters = await regenerateOutline(
       prompt.prompt,
