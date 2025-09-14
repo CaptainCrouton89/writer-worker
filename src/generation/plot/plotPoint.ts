@@ -247,7 +247,9 @@ export const generatePlotPoint = async (
         model: modelProvider,
         prompt,
         system,
-        temperature: model.temperature,
+        temperature: chapterIndex === 0 && plotPointIndex === 0
+          ? model.temperature + 0.2
+          : model.temperature,
         topP: model.top_p,
         topK: model.top_k,
         seed: Math.floor(Math.random() * 1000000),
