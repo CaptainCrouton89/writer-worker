@@ -1,30 +1,44 @@
 import { JobProcessorV2 } from "./job-processor-v2.js";
 import { supabase } from "./lib/supabase.js";
 import { GenerationJob, WorkerConfig } from "./lib/types.js";
+import { Database } from "./lib/supabase/types.js";
 import { JOB_STATUS, CHAPTER_GENERATION_STATUS, JOB_STEPS } from "./lib/constants/status.js";
 
+// Export MAX_CONCURRENT_JOBS for server metrics
+export const MAX_CONCURRENT_JOBS = process.env.WORKER_CONCURRENCY ? parseInt(process.env.WORKER_CONCURRENCY) : 2;
+
 const config: WorkerConfig = {
-  pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || "5000"),
-  maxRetries: parseInt(process.env.MAX_RETRIES || "2"),
-  workerConcurrency: parseInt(process.env.WORKER_CONCURRENCY || "2"),
+  pollIntervalMs: process.env.POLL_INTERVAL_MS ? parseInt(process.env.POLL_INTERVAL_MS) : 5000,
+  maxRetries: process.env.MAX_RETRIES ? parseInt(process.env.MAX_RETRIES) : 2,
+  workerConcurrency: MAX_CONCURRENT_JOBS,
 };
 
 let isShuttingDown = false;
 
+// Track currently processing jobs with start times and job data
+export const activeJobs = new Map<string, { startTime: Date; jobData: GenerationJob }>();
+
 export async function startWorker() {
   console.log("🚀 Starting Smut Writer Worker");
-  console.log("⚙️ Worker configuration:", config);
+  console.log("⚙️ Worker configuration:", { ...config, maxConcurrentJobs: MAX_CONCURRENT_JOBS });
 
   // Graceful shutdown handling
-  process.on("SIGTERM", () => {
-    console.log("📡 Received SIGTERM, initiating graceful shutdown...");
+  const initiateShutdown = async () => {
+    console.log("📡 Initiating graceful shutdown...");
     isShuttingDown = true;
-  });
 
-  process.on("SIGINT", () => {
-    console.log("📡 Received SIGINT, initiating graceful shutdown...");
-    isShuttingDown = true;
-  });
+    if (activeJobs.size > 0) {
+      console.log(`⏳ Waiting for ${activeJobs.size} active jobs to complete...`);
+      // Poll until all jobs complete
+      while (activeJobs.size > 0) {
+        await sleep(1000); // Wait 1 second
+      }
+      console.log("✅ All active jobs completed");
+    }
+  };
+
+  process.on("SIGTERM", initiateShutdown);
+  process.on("SIGINT", initiateShutdown);
 
   // Clean up orphaned chapters on startup
   await cleanupOrphanedChapters();
@@ -32,11 +46,19 @@ export async function startWorker() {
   // Create job processor instance
   const processor = new JobProcessorV2();
 
-  // Main worker loop
+  // Main worker loop - poll more frequently when there are available slots
   while (!isShuttingDown) {
     try {
-      await pollAndProcessJobs(processor);
-      await sleep(config.pollIntervalMs);
+      const availableSlots = MAX_CONCURRENT_JOBS - activeJobs.size;
+
+      if (availableSlots > 0) {
+        await pollAndProcessJobs(processor);
+        // Poll more frequently when slots are available (reduced interval)
+        await sleep(Math.min(config.pollIntervalMs, 1000));
+      } else {
+        // When at max capacity, wait longer before checking again
+        await sleep(config.pollIntervalMs);
+      }
     } catch (error) {
       console.error("❌ Error in worker loop:", error);
       await sleep(config.pollIntervalMs);
@@ -48,11 +70,18 @@ export async function startWorker() {
 
 async function pollAndProcessJobs(processor: JobProcessorV2) {
   try {
-    // Atomically claim jobs using the database function
-    const { data: jobs, error } = await supabase
-      .rpc("claim_pending_jobs" as any, { worker_count: config.workerConcurrency });
+    // Calculate available slots
+    const availableSlots = MAX_CONCURRENT_JOBS - activeJobs.size;
 
-    const generationJobs = jobs as unknown as GenerationJob[];
+    if (availableSlots <= 0) {
+      return;
+    }
+
+    // Atomically claim jobs using the database function - only claim what we can handle
+    const { data: jobs, error } = await supabase
+      .rpc("claim_pending_jobs", { worker_count: availableSlots });
+
+    const generationJobs = jobs as GenerationJob[];
 
     if (error) {
       console.error("❌ Error claiming jobs:", error);
@@ -63,13 +92,38 @@ async function pollAndProcessJobs(processor: JobProcessorV2) {
       return;
     }
 
-    console.log(`📋 Claimed ${jobs.length} job(s) for processing`);
+    console.log(`📋 Claimed ${jobs.length} job(s) for processing (${activeJobs.size} active, ${availableSlots} slots available)`);
 
-    // Process jobs concurrently using the new JobProcessor
-    const promises = generationJobs.map((job) => processor.processJob(job));
-    await Promise.allSettled(promises);
+    // Start jobs immediately without waiting, tracking job data in activeJobs Map
+    const jobPromises: Promise<void>[] = [];
+    for (const job of generationJobs) {
+      // Track the job as active with start time and job data
+      activeJobs.set(job.id, { startTime: new Date(), jobData: job });
+
+      const jobPromise = processJobWithTracking(processor, job);
+      jobPromises.push(jobPromise);
+    }
+
+    // Wait for all jobs to complete (but don't block polling for new jobs)
+    Promise.allSettled(jobPromises).then(() => {
+      // All jobs completed, logging is handled in processJobWithTracking
+    });
   } catch (error) {
     console.error("❌ Error in pollAndProcessJobs:", error);
+  }
+}
+
+async function processJobWithTracking(processor: JobProcessorV2, job: GenerationJob): Promise<void> {
+  try {
+    console.log(`🚀 Starting job ${job.id} (${activeJobs.size}/${MAX_CONCURRENT_JOBS} slots used)`);
+    await processor.processJob(job);
+    console.log(`✅ Completed job ${job.id}`);
+  } catch (error) {
+    console.error(`❌ Error processing job ${job.id}:`, error);
+  } finally {
+    // Always remove job from activeJobs in finally block for safety
+    activeJobs.delete(job.id);
+    console.log(`🧹 Job ${job.id} removed from active jobs (${activeJobs.size}/${MAX_CONCURRENT_JOBS} slots used)`);
   }
 }
 

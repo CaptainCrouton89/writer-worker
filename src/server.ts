@@ -5,8 +5,8 @@ import { supabase } from "./lib/supabase.js";
 import { HEALTH_STATUS, JOB_STATUS } from "./lib/constants/status.js";
 import { JobRetryService, RetryJobRequest } from "./services/job-retry-service.js";
 
-// Import cleanupOrphanedChapters function
-import { cleanupOrphanedChapters } from "./worker.js";
+// Import cleanupOrphanedChapters function and active jobs tracking
+import { cleanupOrphanedChapters, activeJobs, MAX_CONCURRENT_JOBS } from "./worker.js";
 // Import test router
 import testRouter from "./test-router.js";
 
@@ -65,6 +65,7 @@ app.get("/", (req, res) => {
     endpoints: {
       health: "/health",
       metrics: "/metrics",
+      activeJobs: "GET /jobs/active",
       retry: "POST /jobs/retry",
       cleanup: "POST /cleanup/orphaned-chapters",
       test: "/test (requires authentication)",
@@ -100,26 +101,84 @@ app.get("/metrics", async (req, res) => {
       throw new Error("Failed to fetch job metrics");
     }
 
+    // Get active jobs information (handle case where activeJobs might not be initialized)
+    const activeJobsCount = activeJobs?.size ?? 0;
+    const activeJobIds = activeJobs ? Array.from(activeJobs.keys()) : [];
+    const availableSlots = MAX_CONCURRENT_JOBS - activeJobsCount;
+
     res.json({
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       jobs: {
-        pending: pendingJobs?.[0]?.count || 0,
-        processing: processingJobs?.[0]?.count || 0,
-        completed: completedJobs?.[0]?.count || 0,
-        failed: failedJobs?.[0]?.count || 0,
+        pending: pendingJobs?.[0]?.count ?? 0,
+        processing: processingJobs?.[0]?.count ?? 0,
+        completed: completedJobs?.[0]?.count ?? 0,
+        failed: failedJobs?.[0]?.count ?? 0,
+      },
+      activeJobs: {
+        activeJobsCount,
+        activeJobIds,
+        availableSlots,
       },
       worker: {
-        pollInterval: process.env.POLL_INTERVAL_MS || "5000",
-        maxRetries: process.env.MAX_RETRIES || "2",
-        concurrency: process.env.WORKER_CONCURRENCY || "2",
+        pollInterval: process.env.POLL_INTERVAL_MS ? process.env.POLL_INTERVAL_MS : "5000",
+        maxRetries: process.env.MAX_RETRIES ? process.env.MAX_RETRIES : "2",
+        concurrency: process.env.WORKER_CONCURRENCY ? process.env.WORKER_CONCURRENCY : "2",
+        maxConcurrentJobs: MAX_CONCURRENT_JOBS,
       },
     });
   } catch (error) {
     console.error("Metrics fetch failed:", error);
     res.status(500).json({
       error: "Failed to fetch metrics",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Active jobs endpoint - detailed info about currently processing jobs
+app.get("/jobs/active", (req, res) => {
+  try {
+    // Handle case where activeJobs might not be initialized yet
+    if (!activeJobs) {
+      res.json({
+        timestamp: new Date().toISOString(),
+        totalActive: 0,
+        availableSlots: MAX_CONCURRENT_JOBS,
+        jobs: [],
+      });
+      return;
+    }
+
+    const now = new Date();
+    const activeJobDetails = Array.from(activeJobs.entries()).map(([jobId, jobInfo]) => {
+      const processingDuration = now.getTime() - jobInfo.startTime.getTime();
+      return {
+        id: jobId,
+        chapterId: jobInfo.jobData.chapter_id,
+        sequenceId: jobInfo.jobData.sequence_id,
+        userId: jobInfo.jobData.user_id,
+        jobType: jobInfo.jobData.job_type,
+        currentStep: jobInfo.jobData.current_step,
+        progress: jobInfo.jobData.progress,
+        startTime: jobInfo.startTime.toISOString(),
+        processingDurationMs: processingDuration,
+        processingDurationMin: Math.round(processingDuration / 60000 * 100) / 100,
+      };
+    });
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      totalActive: activeJobs.size,
+      availableSlots: MAX_CONCURRENT_JOBS - activeJobs.size,
+      maxConcurrentJobs: MAX_CONCURRENT_JOBS,
+      jobs: activeJobDetails,
+    });
+  } catch (error) {
+    console.error("Active jobs fetch failed:", error);
+    res.status(500).json({
+      error: "Failed to fetch active jobs",
       timestamp: new Date().toISOString(),
     });
   }

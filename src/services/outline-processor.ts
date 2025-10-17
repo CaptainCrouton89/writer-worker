@@ -99,7 +99,7 @@ export class OutlineProcessor {
       prompt.style,
       prompt.spice_level as SpiceLevel,
       prompt.prompt,
-      "ba19ebe8-8d5c-4547-b3c7-eb3d6148fa5e" // Kimi k2 free - always use for quirks
+      "fc96ce93-b98f-4606-92fc-8fe2c4db1ef6" // Gemini 2.5 Pro - supports structured output
     );
 
     let selectedQuirk: string | null = null;
